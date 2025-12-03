@@ -56,14 +56,13 @@ export function ChatPanel({
 
   const contextDisplay = useMemo(() => {
     if (selectedDocIds.length === 0) {
-      return 'No documents selected';
+      return { icon: FileText, text: 'No documents selected' };
     }
 
     const selectedCollections = collections.filter(col => 
       col.documentIds.length > 0 && col.documentIds.every(id => selectedDocIds.includes(id))
     );
-
-    const selectedCollectionIds = selectedCollections.map(c => c.id);
+    
     const selectedCollectionDocIds = new Set(selectedCollections.flatMap(c => c.documentIds));
     
     const standaloneDocs = selectedDocuments.filter(doc => !selectedCollectionDocIds.has(doc.id));
@@ -76,11 +75,15 @@ export function ChatPanel({
       parts.push(...standaloneDocs.map(d => d.name));
     }
 
+    const isCollectionSelected = selectedCollections.length > 0;
+    let text;
     if (parts.length <= 2) {
-      return parts.join(', ');
+      text = parts.join(', ');
+    } else {
+      text = `${parts.slice(0, 2).join(', ')} and ${parts.length - 2} more`;
     }
 
-    return `${parts.slice(0, 2).join(', ')} and ${parts.length - 2} more`;
+    return { icon: isCollectionSelected ? Folder : FileText, text };
 
   }, [selectedDocIds, documents, collections]);
 
@@ -143,14 +146,16 @@ export function ChatPanel({
     formRef.current?.reset();
   };
 
+  const ContextIcon = contextDisplay.icon;
+
   return (
     <div className="flex h-full flex-col bg-secondary/50">
        <div className="flex items-center justify-between border-b bg-background p-4">
         <div className="text-sm text-muted-foreground min-w-0">
           <div className="flex items-center gap-2 truncate">
-            {selectedDocIds.length > 0 ? <Folder className="h-4 w-4 shrink-0" /> : <FileText className="h-4 w-4 shrink-0" /> }
-            <span className="font-semibold text-foreground truncate" title={contextDisplay}>
-              {contextDisplay}
+            <ContextIcon className="h-4 w-4 shrink-0" />
+            <span className="font-semibold text-foreground truncate" title={contextDisplay.text}>
+              {contextDisplay.text}
             </span>
           </div>
         </div>
