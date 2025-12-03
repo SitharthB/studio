@@ -94,7 +94,7 @@ export async function summarizeDocuments(
 
     try {
         const result = await generateSummaryOfDocuments({
-            documents: documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`),
+            documents: documents.map(d => ({ name: d.name, content: d.content })),
         });
         return { summary: result.summary };
     } catch (e: any) {

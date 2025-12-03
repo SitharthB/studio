@@ -10,8 +10,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const DocumentSchema = z.object({
+  name: z.string().describe('The name of the document.'),
+  content: z.string().describe('The text content of the document.'),
+});
+
 const GenerateSummaryOfDocumentsInputSchema = z.object({
-  documents: z.array(z.string()).describe('The text content of the documents to summarize, each prefixed with its name.'),
+  documents: z.array(DocumentSchema).describe('The documents to summarize.'),
 });
 export type GenerateSummaryOfDocumentsInput = z.infer<typeof GenerateSummaryOfDocumentsInputSchema>;
 
@@ -33,7 +38,9 @@ const prompt = ai.definePrompt({
   Documents:
   {{#each documents}}
   ---
-  {{{this}}}
+  Document Name: {{{name}}}
+
+  {{{content}}}
   ---
   {{/each}}
   `,
