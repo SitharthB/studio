@@ -41,6 +41,7 @@ interface DocumentSidebarProps {
   documents: Document[];
   selectedDocs: string[];
   onDocSelect: (docId: string, isSelected: boolean) => void;
+  onUploadClick: () => void;
   className?: string;
 }
 
@@ -48,6 +49,7 @@ export function DocumentSidebar({
   documents,
   selectedDocs,
   onDocSelect,
+  onUploadClick,
   className,
 }: DocumentSidebarProps) {
 
@@ -61,7 +63,7 @@ export function DocumentSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <Button variant="default" className="w-full bg-primary hover:bg-primary/90">
+          <Button onClick={onUploadClick} variant="default" className="w-full bg-primary hover:bg-primary/90">
             <Plus className="mr-2" />
             Upload Document
           </Button>
