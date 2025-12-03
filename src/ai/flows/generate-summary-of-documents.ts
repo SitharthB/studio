@@ -11,7 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateSummaryOfDocumentsInputSchema = z.object({
-  documents: z.array(z.string()).describe('The text content of the documents to summarize.'),
+  documents: z.array(z.string()).describe('The text content of the documents to summarize, including their names.'),
 });
 export type GenerateSummaryOfDocumentsInput = z.infer<typeof GenerateSummaryOfDocumentsInputSchema>;
 
