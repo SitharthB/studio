@@ -21,6 +21,27 @@ const SearchWebOutputSchema = z.object({
 });
 export type SearchWebOutput = z.infer<typeof SearchWebOutputSchema>;
 
+
+const prompt = ai.definePrompt({
+  name: 'searchWebPrompt',
+  input: { schema: SearchWebInputSchema },
+  output: { schema: SearchWebOutputSchema },
+  tools: [ai.googleSearch],
+  prompt: `You are an expert web search assistant. Your goal is to provide a comprehensive and accurate answer to the user's question based on information you find on the internet.
+
+  Your task is to:
+  1.  Take the user's query and perform a web search using the provided tools.
+  2.  Carefully analyze the search results.
+  3.  Synthesize the information from the most reliable sources to construct a single, well-written answer.
+  4.  The answer should directly address the user's query.
+  5.  Base your answer ONLY on the information you find from the web search. Do not use any prior knowledge.
+  6.  Format the answer in clear, easy-to-read Markdown.
+
+  User Query: {{{query}}}
+  `,
+});
+
+
 export const searchWebFlow = ai.defineFlow(
   {
     name: 'searchWebFlow',
@@ -29,16 +50,9 @@ export const searchWebFlow = ai.defineFlow(
   },
   async (input) => {
 
-    const llmResponse = await ai.generate({
-      prompt: input.query,
-      tools: [ai.googleSearch], // Enable the built-in Google Search tool
-      config: {
-        // Higher temperature for more creative/fluent web-based answers
-        temperature: 0.7,
-      },
-    });
+    const llmResponse = await prompt(input);
 
-    const text = llmResponse.text;
+    const text = llmResponse.output!.answer;
 
     return { answer: text };
   }
