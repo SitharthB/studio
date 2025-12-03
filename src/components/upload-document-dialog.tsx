@@ -38,12 +38,10 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    if (open && collections.length > 0) {
-      setCollectionOption('existing');
-    } else if (open) {
+    if (open) {
       setCollectionOption(null);
     }
-  }, [open, collections.length]);
+  }, [open]);
 
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +94,7 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
 
   const resetState = () => {
     setFile(null);
-    setCollectionOption(collections.length > 0 ? 'existing' : null);
+    setCollectionOption(null);
     setSelectedCollection(undefined);
     setNewCollectionName('');
     if(fileInputRef.current) fileInputRef.current.value = '';
@@ -116,12 +114,19 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
 
   const canUpload = useMemo(() => {
     if (!file) return false;
-    if (collectionOption === 'existing' && !selectedCollection) return false;
-    if (collectionOption === 'new' && !newCollectionName.trim()) return false;
-    // If collectionOption is null, it's a standalone upload which is allowed.
-    if (collectionOption === null) return true;
-    return true;
+    if (collectionOption === 'existing') return !!selectedCollection;
+    if (collectionOption === 'new') return !!newCollectionName.trim();
+    return true; // For standalone upload
   }, [file, collectionOption, selectedCollection, newCollectionName]);
+
+  const handleRadioChange = (value: string) => {
+    const val = value as 'existing' | 'new';
+    if (collectionOption === val) {
+      setCollectionOption(null); // Uncheck if clicking the same one
+    } else {
+      setCollectionOption(val);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -190,7 +195,7 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
                 </p>
               </div>
 
-              <RadioGroup value={collectionOption || ''} onValueChange={(val) => setCollectionOption(val as 'existing' | 'new' | null)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <RadioGroup value={collectionOption || ''} onValueChange={handleRadioChange} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Label htmlFor="existing-collection" className={cn(
                     "flex flex-col gap-2 rounded-lg border p-4 cursor-pointer transition-colors hover:bg-accent/50",
                     collectionOption === 'existing' && 'border-primary bg-primary/5 ring-1 ring-primary'
