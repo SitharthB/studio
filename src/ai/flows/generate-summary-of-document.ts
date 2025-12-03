@@ -20,10 +20,6 @@ const GenerateSummaryOfDocumentOutputSchema = z.object({
 });
 export type GenerateSummaryOfDocumentOutput = z.infer<typeof GenerateSummaryOfDocumentOutputSchema>;
 
-export async function generateSummaryOfDocument(input: GenerateSummaryOfDocumentInput): Promise<GenerateSummaryOfDocumentOutput> {
-  return generateSummaryOfDocumentFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'generateSummaryOfDocumentPrompt',
   input: {schema: GenerateSummaryOfDocumentInputSchema},
@@ -31,14 +27,8 @@ const prompt = ai.definePrompt({
   prompt: `Summarize the following document. The summary should be concise and capture the main points of the document.\n\nDocument:\n{{{documentText}}}`,
 });
 
-const generateSummaryOfDocumentFlow = ai.defineFlow(
-  {
-    name: 'generateSummaryOfDocumentFlow',
-    inputSchema: GenerateSummaryOfDocumentInputSchema,
-    outputSchema: GenerateSummaryOfDocumentOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+// This is now an async function that can be directly called by other flows.
+export async function generateSummaryOfDocument(input: GenerateSummaryOfDocumentInput): Promise<GenerateSummaryOfDocumentOutput> {
+  const {output} = await prompt(input);
+  return output!;
+}
