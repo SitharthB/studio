@@ -67,23 +67,17 @@ export function ChatPanel({
     
     const standaloneDocs = selectedDocuments.filter(doc => !selectedCollectionDocIds.has(doc.id));
 
-    const parts: string[] = [];
+    const parts: {name: string, isCollection: boolean}[] = [];
     if (selectedCollections.length > 0) {
-      parts.push(...selectedCollections.map(c => c.name));
+      parts.push(...selectedCollections.map(c => ({name: c.name, isCollection: true})));
     }
     if (standaloneDocs.length > 0) {
-      parts.push(...standaloneDocs.map(d => d.name));
+      parts.push(...standaloneDocs.map(d => ({name: d.name, isCollection: false})));
     }
-
+    
     const isCollectionSelected = selectedCollections.length > 0;
-    let text;
-    if (parts.length <= 2) {
-      text = parts.join(', ');
-    } else {
-      text = `${parts.slice(0, 2).join(', ')} and ${parts.length - 2} more`;
-    }
 
-    return { icon: isCollectionSelected ? Folder : FileText, text };
+    return { icon: isCollectionSelected ? Folder : FileText, parts };
 
   }, [selectedDocIds, documents, collections]);
 
@@ -153,15 +147,31 @@ export function ChatPanel({
        <div className="flex items-center justify-between border-b bg-background p-4">
         <div className="text-sm text-muted-foreground min-w-0">
           <div className="flex items-center gap-2 truncate">
-            <ContextIcon className="h-4 w-4 shrink-0" />
-            <span className="font-semibold text-foreground truncate" title={contextDisplay.text}>
-              {contextDisplay.text}
-            </span>
+          {Array.isArray(contextDisplay.parts) ? (
+            contextDisplay.parts.map((part, index) => (
+              <React.Fragment key={index}>
+                <div className="flex items-center gap-1.5 bg-secondary px-2 py-1 rounded-md">
+                  {part.isCollection ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4" />}
+                  <span className="font-semibold text-foreground truncate" title={part.name}>
+                    {part.name}
+                  </span>
+                </div>
+                {index < contextDisplay.parts.length - 1 && <span>,</span>}
+              </React.Fragment>
+            ))
+          ) : (
+            <>
+              <ContextIcon className="h-4 w-4 shrink-0" />
+              <span className="font-semibold text-foreground truncate" title={contextDisplay.text}>
+                {contextDisplay.text}
+              </span>
+            </>
+          )}
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={onSelectDocumentsClick} className="shrink-0">
           <FileText className="mr-2 h-4 w-4" />
-          Select Documents
+          {selectedDocIds.length > 0 ? 'Change Documents' : 'Select Documents'}
         </Button>
       </div>
       <div className="flex-1 overflow-hidden bg-background">
