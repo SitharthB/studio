@@ -15,31 +15,6 @@ interface DocumentViewerProps {
 }
 
 const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, citation: Citation }>(({ doc, citation }, ref) => {
-  const getHighlightedContent = () => {
-    if (!doc || !citation) return null;
-    const { content } = doc;
-    const { passage } = citation;
-
-    const passageIndex = content.indexOf(passage);
-    if (passageIndex === -1) {
-      // If passage not found, just show the whole content
-      return <pre className="whitespace-pre-wrap font-body text-sm leading-relaxed">{content}</pre>;
-    }
-
-    const prePassage = content.substring(0, passageIndex);
-    const postPassage = content.substring(passageIndex + passage.length);
-
-    return (
-      <p className="whitespace-pre-wrap font-body text-sm leading-relaxed text-muted-foreground">
-        {prePassage.slice(-200)}
-        <mark className="bg-accent/20 text-foreground rounded-sm px-1">
-          {passage}
-        </mark>
-        {postPassage.slice(0, 200)}
-      </p>
-    );
-  };
-  
   return (
     <div ref={ref} className="bg-card p-4 rounded-lg border">
       <div className="flex items-center gap-2 mb-3">
@@ -52,7 +27,9 @@ const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, cita
           </p>
         </div>
       </div>
-      {getHighlightedContent()}
+      <blockquote className="border-l-2 border-primary pl-3 text-sm text-foreground">
+        {citation.passage}
+      </blockquote>
     </div>
   );
 });
@@ -67,7 +44,8 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
     // When a new citation is added, scroll to it.
     if (open && citations.length > 0) {
       const latestCitation = citations[citations.length - 1];
-      const ref = blockRefs.current[latestCitation.citationNumber];
+      const citationKey = `${latestCitation.documentId}-${latestCitation.citationNumber}`;
+      const ref = blockRefs.current[citationKey];
       
       setTimeout(() => {
         if (ref) {
@@ -111,12 +89,13 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
                 citations.map((citation) => {
                   const doc = documents.find(d => d.id === citation.documentId);
                   if (!doc) return null;
+                  const citationKey = `${citation.documentId}-${citation.citationNumber}`;
                   return (
                     <EvidenceBlock 
-                      key={`${citation.documentId}-${citation.citationNumber}`}
+                      key={citationKey}
                       doc={doc} 
                       citation={citation} 
-                      ref={el => blockRefs.current[citation.citationNumber] = el}
+                      ref={el => blockRefs.current[citationKey] = el}
                     />
                   );
                 })

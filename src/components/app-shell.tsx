@@ -29,7 +29,7 @@ export default function AppShell() {
     }
     // Add the new citation if it's not already in the list
     setEvidenceCitations(prev => {
-        const exists = prev.some(c => c.citationNumber === citation.citationNumber);
+        const exists = prev.some(c => c.citationNumber === citation.citationNumber && c.documentId === citation.documentId);
         return exists ? prev : [...prev, citation];
     });
   };
@@ -85,8 +85,8 @@ export default function AppShell() {
         onUploadClick={() => setIsUploadDocOpen(true)}
       />
       <main className={cn(
-          "flex-1 h-screen transition-[width] duration-300 ease-in-out",
-           isEvidenceViewerOpen ? "w-[calc(100%-280px-480px)]" : "w-[calc(100%-280px)]"
+          "flex-1 flex flex-col h-screen transition-[width] duration-300 ease-in-out",
+           isEvidenceViewerOpen ? "w-[calc(100%-280px-480px)]" : "w-full"
       )}>
           <ChatPanel
             documents={documents}
