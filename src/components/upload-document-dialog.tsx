@@ -116,7 +116,6 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
 
   const canUpload = useMemo(() => {
     if (!file) return false;
-    // Allow upload even if no collection option is selected
     if (collectionOption === 'existing' && !selectedCollection) return false;
     if (collectionOption === 'new' && !newCollectionName.trim()) return false;
     return true;
@@ -185,7 +184,7 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
               <div>
                 <h3 className="font-medium">Choose Collection</h3>
                 <p className="text-sm text-muted-foreground">
-                  Organizing files into collections improves search. If you skip, the document will be saved as standalone.
+                  Organizing files into collections improves search and retrieval. If you skip this step, the document will be saved as standalone.
                 </p>
               </div>
 
@@ -246,7 +245,9 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={resetStateAndClose}>Cancel</Button>
-          <Button onClick={handleUploadClick} disabled={!canUpload}>Upload</Button>
+          <Button onClick={handleUploadClick} disabled={!canUpload}>
+            {collectionOption ? 'Upload' : 'Upload as Standalone'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
