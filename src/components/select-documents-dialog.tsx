@@ -19,7 +19,6 @@ import {
   Folder,
   Search,
   Clock,
-  Pin,
   List,
   ChevronDown,
   FileSpreadsheet,
@@ -90,7 +89,6 @@ export function SelectDocumentsDialog({
     }
     if (activeContext === 'recent') {
       // Simple logic: return last 5 added documents.
-      // Make sure date parsing is correct, assuming 'added' is a valid date string
       return [...documents].sort((a, b) => new Date(b.added).getTime() - new Date(a.added).getTime()).slice(0, 5);
     }
     if (activeContext === 'standalone') {
@@ -171,14 +169,23 @@ export function SelectDocumentsDialog({
              <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
                  {collections.map(col => (
-                   <Button key={col.id} variant={activeContext === col.id ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext(col.id)}>
-                    <Folder className="h-4 w-4 text-primary"/>
-                    <span>{col.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
-                   </Button>
+                   <div key={col.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`col-cb-${col.id}`}
+                        checked={isCollectionSelected(col.id)}
+                        onCheckedChange={(checked) => handleCollectionCheckedChange(col.id, !!checked)}
+                        aria-label={`Select collection ${col.name}`}
+                        data-state={isCollectionIndeterminate(col.id) ? 'indeterminate' : (isCollectionSelected(col.id) ? 'checked' : 'unchecked')}
+                      />
+                      <Button variant={activeContext === col.id ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext(col.id)}>
+                        <Folder className="h-4 w-4 text-primary"/>
+                        <span>{col.name}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
+                      </Button>
+                   </div>
                 ))}
                 {standaloneDocuments.length > 0 && (
-                    <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext('standalone')}>
+                    <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2 mt-1" onClick={() => setActiveContext('standalone')}>
                         <FileText className="h-4 w-4"/>
                         <span>Standalone Documents</span>
                          <span className="ml-auto text-xs text-muted-foreground">{standaloneDocuments.length}</span>
@@ -223,7 +230,12 @@ export function SelectDocumentsDialog({
                 <Table>
                     <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm">
                         <TableRow>
-                            <TableHead className="w-[50px]"><Checkbox /></TableHead>
+                            <TableHead className="w-[50px]">
+                              <Checkbox 
+                                  // This could select all documents in the current view
+                                  // Logic to be implemented if needed
+                              />
+                            </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead className="w-[100px]">Type</TableHead>
                             <TableHead className="w-[150px]">Modified</TableHead>
@@ -237,6 +249,7 @@ export function SelectDocumentsDialog({
                                     <Checkbox 
                                         checked={localSelectedIds.includes(doc.id)}
                                         onCheckedChange={(checked) => handleDocCheckedChange(doc.id, !!checked)}
+                                        aria-label={`Select document ${doc.name}`}
                                     />
                                 </TableCell>
                                 <TableCell className="font-medium flex items-center gap-2">
