@@ -93,9 +93,15 @@ export async function summarizeDocuments(
     }
 
     try {
+        // Combine all document content into a single string.
+        const combinedContent = documents.map(d => {
+            return `--- Document: ${d.name} ---\n\n${d.content}`;
+        }).join('\n\n');
+
         const result = await generateSummaryOfDocuments({
-            documents: documents.map(d => ({ name: d.name, content: d.content })),
+            documents: combinedContent,
         });
+
         return { summary: result.summary };
     } catch (e: any) {
         console.error(e);

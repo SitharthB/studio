@@ -9,16 +9,9 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { generateSummaryOfDocument } from './generate-summary-of-document';
-
-
-const DocumentSchema = z.object({
-  name: z.string().describe('The name of the document.'),
-  content: z.string().describe('The text content of the document.'),
-});
 
 const GenerateSummaryOfDocumentsInputSchema = z.object({
-  documents: z.array(DocumentSchema).describe('The documents to summarize.'),
+  documents: z.string().describe('A single string containing the content of all documents to be summarized, separated by headers.'),
 });
 export type GenerateSummaryOfDocumentsInput = z.infer<typeof GenerateSummaryOfDocumentsInputSchema>;
 
@@ -33,18 +26,12 @@ export async function generateSummaryOfDocuments(input: GenerateSummaryOfDocumen
 
 const prompt = ai.definePrompt({
   name: 'generateSummaryOfDocumentsPrompt',
-  input: {schema: z.object({
-    documentSummaries: z.array(z.string()).describe('The summaries of the documents to combine.')
-  })},
+  input: {schema: GenerateSummaryOfDocumentsInputSchema },
   output: {schema: GenerateSummaryOfDocumentsOutputSchema},
-  prompt: `Provide a concise and structured summary that synthesizes the key information from the following document summaries. The summary should represent the combined insights from all provided texts.
+  prompt: `Provide a concise and structured overall summary that synthesizes the key information from the following text, which contains one or more documents.
 
-  Summaries:
-  {{#each documentSummaries}}
-  ---
-  {{{this}}}
-  ---
-  {{/each}}
+  Here is the text:
+  {{{documents}}}
   `,
 });
 
@@ -55,15 +42,7 @@ const generateSummaryOfDocumentsFlow = ai.defineFlow(
     outputSchema: GenerateSummaryOfDocumentsOutputSchema,
   },
   async (input) => {
-    // "Map" step: Generate a summary for each document sequentially to avoid rate limiting.
-    const summaries: string[] = [];
-    for (const doc of input.documents) {
-      const singleSummary = await generateSummaryOfDocument({ documentText: doc.content });
-      summaries.push(`Document: ${doc.name}\nSummary: ${singleSummary.summary}`);
-    }
-
-    // "Reduce" step: Combine the individual summaries into a single master summary.
-    const { output } = await prompt({ documentSummaries: summaries });
+    const { output } = await prompt(input);
     return output!;
   }
 );
