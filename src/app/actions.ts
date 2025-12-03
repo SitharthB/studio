@@ -1,6 +1,7 @@
 'use server';
 
 import { answerQuestionsAboutDocuments } from '@/ai/flows/answer-questions-about-documents';
+import { answerQuestionsUsingDocumentsAndWeb } from '@/ai/flows/answer-questions-using-documents-and-web';
 import { generateSummaryOfDocuments } from '@/ai/flows/generate-summary-of-documents';
 import { searchWebFlow } from '@/ai/flows/search-web';
 import { z } from 'zod';
@@ -15,6 +16,7 @@ const DocumentSchema = z.object({
 const AskQuestionSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty.'),
   documents: z.array(DocumentSchema),
+  isWebSearchEnabled: z.boolean(),
 });
 
 const SummarizeDocumentsSchema = z.object({
@@ -49,29 +51,41 @@ export async function askQuestion(
   const parsed = AskQuestionSchema.safeParse({
     question: formData.get('question'),
     documents: JSON.parse(formData.get('documents') as string),
+    isWebSearchEnabled: formData.get('isWebSearchEnabled') === 'true',
   });
 
   if (!parsed.success) {
     return { error: 'Invalid input.' };
   }
 
-  const { question, documents } = parsed.data;
+  const { question, documents, isWebSearchEnabled } = parsed.data;
 
-  if (documents.length === 0) {
-    return { error: 'Please select at least one document to ask questions about.' };
+  if (documents.length === 0 && !isWebSearchEnabled) {
+    return { error: 'Please select at least one document or enable web search.' };
   }
 
   try {
-    const result = await answerQuestionsAboutDocuments({
-      question,
-      documents: documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`),
-    });
+    let result;
+    const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
 
+    if (isWebSearchEnabled) {
+       result = await answerQuestionsUsingDocumentsAndWeb({
+        question,
+        documents: documentContents,
+      });
+    } else {
+       result = await answerQuestionsAboutDocuments({
+        question,
+        documents: documentContents,
+      });
+    }
+    
     const remappedCitations = result.citations?.map(citation => {
         // The AI is asked to return the document name. We find the corresponding ID.
+        // If it's a web search, the ID can be 'web-search'
         const doc = documents.find(d => d.name === citation.document);
         return {
-            documentId: doc ? doc.id : 'unknown',
+            documentId: doc ? doc.id : 'web-search',
             passage: citation.passage,
             citationNumber: citation.citationNumber,
         };
