@@ -17,6 +17,7 @@ export type Collection = {
 export type Citation = {
   documentId: string;
   passage: string;
+  citationNumber: number;
 };
 
 export type ChatMessage = {

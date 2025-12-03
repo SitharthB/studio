@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ChatMessage as ChatMessageType, Citation } from '@/types';
 import { Bot, Quote, User, Sparkles } from 'lucide-react';
+import React from 'react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -14,53 +15,73 @@ interface ChatMessageProps {
 export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
 
+  const renderContentWithCitations = (text: string, citations?: Citation[]) => {
+    if (!citations || citations.length === 0) {
+      return <div dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />;
+    }
+
+    const parts = text.split(/(\[\d+\])/g);
+
+    return parts.map((part, index) => {
+      const citationMatch = part.match(/\[(\d+)\]/);
+      if (citationMatch) {
+        const citationNumber = parseInt(citationMatch[1], 10);
+        const citation = citations.find(c => c.citationNumber === citationNumber);
+        if (citation) {
+          return (
+            <button
+              key={index}
+              onClick={() => onCitationClick(citation)}
+              className="inline-block mx-0.5 align-super"
+            >
+              <Badge
+                variant="secondary"
+                className="cursor-pointer rounded-full h-5 w-5 p-0 justify-center transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                {citationNumber}
+              </Badge>
+            </button>
+          );
+        }
+      }
+      return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />;
+    });
+  };
+
+
   return (
-    <div className={cn('flex items-start gap-4', isAssistant ? '' : 'flex-row-reverse')}>
-      <Avatar className="h-9 w-9 border">
-        <AvatarFallback className={cn(isAssistant ? 'bg-primary text-primary-foreground' : 'bg-secondary')}>
-          {isAssistant ? <Bot /> : <User />}
-        </AvatarFallback>
-      </Avatar>
-      <div className={cn('flex flex-col gap-2 rounded-lg p-4', isAssistant ? 'bg-card' : 'bg-primary text-primary-foreground')}>
+    <div className={cn('flex items-start gap-4', isAssistant ? '' : 'justify-end')}>
+      {isAssistant && (
+        <Avatar className="h-9 w-9 border">
+            <AvatarFallback className='bg-primary text-primary-foreground'>
+                <Bot />
+            </AvatarFallback>
+        </Avatar>
+      )}
+      <div className={cn('flex flex-col gap-2 rounded-lg p-4 max-w-3xl', isAssistant ? 'bg-card' : 'bg-primary text-primary-foreground')}>
         {message.isLoading ? (
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 animate-pulse" />
             <span className="text-sm">Thinking...</span>
           </div>
         ) : (
-          <>
-            <div
-              className={cn(
-                'prose prose-sm dark:prose-invert max-w-none',
-                isAssistant ? '' : 'text-primary-foreground'
-              )}
-              dangerouslySetInnerHTML={{ __html: message.text.replace(/\n/g, '<br />') }}
-            />
-            {message.citations && message.citations.length > 0 && (
-              <div className="mt-4">
-                <h4 className="mb-2 text-xs font-semibold uppercase">Citations</h4>
-                <div className="flex flex-wrap gap-2">
-                  {message.citations.map((citation, index) => (
-                    <button
-                      key={index}
-                      onClick={() => onCitationClick(citation)}
-                      className="group"
-                    >
-                      <Badge
-                        variant={isAssistant ? 'secondary' : 'default'}
-                        className="cursor-pointer transition-colors group-hover:bg-accent group-hover:text-accent-foreground"
-                      >
-                        <Quote className="mr-1.5 h-3 w-3" />
-                        Citation {index + 1}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div
+            className={cn(
+              'prose prose-sm dark:prose-invert max-w-none',
+               isAssistant ? '' : 'text-primary-foreground'
             )}
-          </>
+          >
+            {renderContentWithCitations(message.text, message.citations)}
+          </div>
         )}
       </div>
+       {!isAssistant && (
+        <Avatar className="h-9 w-9 border">
+            <AvatarFallback className='bg-secondary'>
+                <User />
+            </AvatarFallback>
+        </Avatar>
+      )}
     </div>
   );
 }

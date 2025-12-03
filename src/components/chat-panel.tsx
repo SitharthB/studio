@@ -148,17 +148,18 @@ export function ChatPanel({
         <div className="text-sm text-muted-foreground min-w-0">
           <div className="flex items-center gap-2 truncate">
           {Array.isArray(contextDisplay.parts) ? (
-            contextDisplay.parts.map((part, index) => (
-              <React.Fragment key={index}>
-                <div className="flex items-center gap-1.5 bg-secondary px-2 py-1 rounded-md">
-                  {part.isCollection ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4" />}
-                  <span className="font-semibold text-foreground truncate" title={part.name}>
-                    {part.name}
-                  </span>
-                </div>
-                {index < contextDisplay.parts.length - 1 && <span>,</span>}
-              </React.Fragment>
-            ))
+             <div className="flex items-center gap-2 truncate">
+              {contextDisplay.parts.map((part, index) => (
+                <React.Fragment key={index}>
+                  <div className="flex items-center gap-1.5 bg-secondary px-2 py-1 rounded-md">
+                    {part.isCollection ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4" />}
+                    <span className="font-semibold text-foreground truncate" title={part.name}>
+                      {part.name}
+                    </span>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
           ) : (
             <>
               <ContextIcon className="h-4 w-4 shrink-0" />
@@ -196,7 +197,7 @@ export function ChatPanel({
               <input
                 type="hidden"
                 name="documents"
-                value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, content: d.content})))}
+                value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
               />
               <Textarea
                 name="question"

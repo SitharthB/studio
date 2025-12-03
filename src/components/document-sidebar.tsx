@@ -2,12 +2,7 @@
 
 import React from 'react';
 import {
-  FileText,
   Plus,
-  MoreHorizontal,
-  Trash2,
-  PenSquare,
-  ArrowRightLeft,
   History,
   FolderKanban,
   MessageSquarePlus,
@@ -24,31 +19,19 @@ import {
   SidebarGroupLabel,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
-import type { Document } from '@/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 interface DocumentSidebarProps {
-  documents: Document[];
-  selectedDocs: string[];
-  onDocSelect: (docId: string, isSelected: boolean) => void;
   onUploadClick: () => void;
   className?: string;
 }
 
 export function DocumentSidebar({
-  documents,
-  selectedDocs,
-  onDocSelect,
   onUploadClick,
   className,
 }: DocumentSidebarProps) {

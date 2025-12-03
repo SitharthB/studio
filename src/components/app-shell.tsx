@@ -9,6 +9,7 @@ import { documents as initialDocuments, collections as initialCollections } from
 import type { Document, ChatMessage, Citation, Collection } from '@/types';
 import { SelectDocumentsDialog } from './select-documents-dialog';
 import { UploadDocumentDialog } from './upload-document-dialog';
+import { cn } from '@/lib/utils';
 
 export default function AppShell() {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
@@ -67,33 +68,35 @@ export default function AppShell() {
   return (
     <SidebarProvider>
       <DocumentSidebar
-        documents={documents}
-        selectedDocs={selectedDocs}
-        onDocSelect={() => {}}
         onUploadClick={() => setIsUploadDocOpen(true)}
       />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <SidebarTrigger className="md:hidden" />
-        </header>
-        <main className="flex-1 h-[calc(100vh-3.5rem)] md:h-screen">
-            <ChatPanel
-            documents={documents}
-            collections={collections}
-            selectedDocIds={selectedDocs}
-            chatHistory={chatHistory}
-            setChatHistory={setChatHistory}
-            onCitationClick={handleCitationClick}
-            onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
+        <div className="flex h-screen w-full">
+            <main className={cn(
+                "flex-1 h-screen transition-[width] duration-300 ease-in-out",
+                viewingCitation ? "w-[calc(100%-480px)]" : "w-full"
+            )}>
+                <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 md:hidden">
+                    <SidebarTrigger />
+                </header>
+                <ChatPanel
+                documents={documents}
+                collections={collections}
+                selectedDocIds={selectedDocs}
+                chatHistory={chatHistory}
+                setChatHistory={setChatHistory}
+                onCitationClick={handleCitationClick}
+                onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
+                />
+            </main>
+            <DocumentViewer
+                open={!!viewingCitation}
+                onOpenChange={(open) => !open && setViewingCitation(null)}
+                document={viewingCitation?.doc ?? null}
+                citation={viewingCitation?.citation ?? null}
             />
-        </main>
+        </div>
       </SidebarInset>
-      <DocumentViewer
-        open={!!viewingCitation}
-        onOpenChange={(open) => !open && setViewingCitation(null)}
-        document={viewingCitation?.doc ?? null}
-        citation={viewingCitation?.citation ?? null}
-      />
       <SelectDocumentsDialog
         open={isDocSelectOpen}
         onOpenChange={setIsDocSelectOpen}

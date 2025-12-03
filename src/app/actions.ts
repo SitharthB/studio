@@ -9,6 +9,7 @@ const AskQuestionSchema = z.object({
   documents: z.array(
     z.object({
       id: z.string(),
+      name: z.string(),
       content: z.string(),
     })
   ),
@@ -42,18 +43,16 @@ export async function askQuestion(
   try {
     const result = await answerQuestionsAboutDocuments({
       question,
-      documents: documents.map((d) => d.content),
+      documents: documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`),
     });
 
-    // Remap citations to include document IDs
     const remappedCitations = result.citations?.map(citation => {
-        // This is a simplified mapping. A real implementation would need a more robust way
-        // to match the cited passage back to the original document.
-        // Here, we find the first document that includes the passage.
-        const doc = documents.find(d => d.content.includes(citation.passage));
+        // The AI is asked to return the document name. We find the corresponding ID.
+        const doc = documents.find(d => d.name === citation.document);
         return {
             documentId: doc ? doc.id : 'unknown',
             passage: citation.passage,
+            citationNumber: citation.citationNumber,
         };
     }) || [];
 
