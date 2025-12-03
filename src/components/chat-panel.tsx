@@ -20,6 +20,7 @@ interface ChatPanelProps {
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessageType[]>>;
   onCitationClick: (citation: Citation) => void;
   onSelectDocumentsClick: () => void;
+  onNewQuestion: () => void;
 }
 
 const initialState = {
@@ -46,6 +47,7 @@ export function ChatPanel({
   setChatHistory,
   onCitationClick,
   onSelectDocumentsClick,
+  onNewQuestion,
 }: ChatPanelProps) {
   const [state, formAction] = useFormState(askQuestion, initialState);
   const { toast } = useToast();
@@ -122,6 +124,8 @@ export function ChatPanel({
   const handleFormSubmit = (formData: FormData) => {
     const question = formData.get('question') as string;
     if (!question.trim()) return;
+
+    onNewQuestion();
 
     const newQuestionMessage: ChatMessageType = {
       id: `user-${Date.now()}`,

@@ -16,23 +16,35 @@ export default function AppShell() {
   const [collections, setCollections] = useState<Collection[]>(initialCollections);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [viewingCitation, setViewingCitation] = useState<{ doc: Document, citation: Citation } | null>(null);
+  
+  const [isEvidenceViewerOpen, setIsEvidenceViewerOpen] = useState(false);
+  const [evidenceCitations, setEvidenceCitations] = useState<Citation[]>([]);
+
   const [isDocSelectOpen, setIsDocSelectOpen] = useState(false);
   const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
 
   const handleCitationClick = (citation: Citation) => {
-    const doc = documents.find((d) => d.id === citation.documentId);
-    if (doc) {
-      setViewingCitation({ doc, citation });
+    // Open the viewer on the first click
+    if (!isEvidenceViewerOpen) {
+      setIsEvidenceViewerOpen(true);
     }
+    // Add the new citation if it's not already in the list
+    setEvidenceCitations(prev => {
+        const exists = prev.some(c => c.citationNumber === citation.citationNumber);
+        return exists ? prev : [...prev, citation];
+    });
+  };
+
+  const handleNewQuestion = () => {
+    // Reset evidence viewer when a new question is asked
+    setIsEvidenceViewerOpen(false);
+    setEvidenceCitations([]);
   };
 
   const handleUpload = (file: File, destination: { type: string; id?: string; name?: string }) => {
-    // This is a placeholder for the actual upload logic
     console.log('Uploading file:', file.name);
     console.log('Destination:', destination);
 
-    // Create a new document object
     const newDoc: Document = {
       id: `doc-${Date.now()}`,
       name: file.name,
@@ -64,6 +76,9 @@ export default function AppShell() {
     setIsUploadDocOpen(false);
   };
 
+  const evidenceDocuments = evidenceCitations
+    .map(citation => documents.find(d => d.id === citation.documentId))
+    .filter((d): d is Document => !!d);
 
   return (
     <SidebarProvider>
@@ -74,7 +89,7 @@ export default function AppShell() {
         <div className="flex h-screen w-full">
             <main className={cn(
                 "flex-1 h-screen transition-[width] duration-300 ease-in-out",
-                viewingCitation ? "w-[calc(100%-480px)]" : "w-full"
+                 isEvidenceViewerOpen ? "w-[calc(100%-480px)]" : "w-full"
             )}>
                 <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 md:hidden">
                     <SidebarTrigger />
@@ -87,13 +102,14 @@ export default function AppShell() {
                 setChatHistory={setChatHistory}
                 onCitationClick={handleCitationClick}
                 onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
+                onNewQuestion={handleNewQuestion}
                 />
             </main>
-            <DocumentViewer
-                open={!!viewingCitation}
-                onOpenChange={(open) => !open && setViewingCitation(null)}
-                document={viewingCitation?.doc ?? null}
-                citation={viewingCitation?.citation ?? null}
+             <DocumentViewer
+                open={isEvidenceViewerOpen}
+                onOpenChange={setIsEvidenceViewerOpen}
+                documents={evidenceDocuments}
+                citations={evidenceCitations}
             />
         </div>
       </SidebarInset>

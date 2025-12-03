@@ -5,51 +5,81 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Document as DocumentType, Citation } from '@/types';
-import { X } from 'lucide-react';
-import { Separator } from './ui/separator';
+import { X, FileText } from 'lucide-react';
 
 interface DocumentViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  document: DocumentType | null;
-  citation: Citation | null;
+  documents: DocumentType[];
+  citations: Citation[];
 }
 
-export function DocumentViewer({ open, onOpenChange, document, citation }: DocumentViewerProps) {
-  const passageRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (open && citation && passageRef.current) {
-      passageRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }
-  }, [open, citation]);
-
+const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, citation: Citation }>(({ doc, citation }, ref) => {
   const getHighlightedContent = () => {
-    if (!document || !citation) return null;
-    const { content, passage } = citation;
+    if (!doc || !citation) return null;
+    const { content } = doc;
+    const { passage } = citation;
 
-    const passageIndex = document.content.indexOf(passage);
+    const passageIndex = content.indexOf(passage);
     if (passageIndex === -1) {
       // If passage not found, just show the whole content
-      return document.content;
+      return <pre className="whitespace-pre-wrap font-body text-sm leading-relaxed">{content}</pre>;
     }
 
-    const prePassage = document.content.substring(0, passageIndex);
-    const postPassage = document.content.substring(passageIndex + passage.length);
+    const prePassage = content.substring(0, passageIndex);
+    const postPassage = content.substring(passageIndex + passage.length);
 
     return (
-      <>
-        {prePassage}
-        <mark ref={passageRef as any} className="bg-accent/50 text-foreground rounded-sm px-1">
+      <p className="whitespace-pre-wrap font-body text-sm leading-relaxed text-muted-foreground">
+        {prePassage.slice(-200)}
+        <mark className="bg-accent/50 text-foreground rounded-sm px-1">
           {passage}
         </mark>
-        {postPassage}
-      </>
+        {postPassage.slice(0, 200)}
+      </p>
     );
   };
+  
+  return (
+    <div ref={ref} className="bg-card p-4 rounded-lg border">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-none rounded-full h-6 w-6 flex items-center justify-center bg-secondary text-secondary-foreground text-xs font-bold">
+          {citation.citationNumber}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate" title={doc.name}>
+            {doc.name}
+          </p>
+        </div>
+      </div>
+      {getHighlightedContent()}
+    </div>
+  );
+});
+EvidenceBlock.displayName = 'EvidenceBlock';
+
+
+export function DocumentViewer({ open, onOpenChange, documents, citations }: DocumentViewerProps) {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
+  useEffect(() => {
+    // When a new citation is added, scroll to it.
+    if (open && citations.length > 0) {
+      const latestCitation = citations[citations.length - 1];
+      const ref = blockRefs.current[latestCitation.citationNumber];
+      
+      setTimeout(() => {
+        if (ref) {
+            ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100); // Small delay to allow for render
+    }
+  }, [citations, open]);
+
+  const handleClose = () => {
+    onOpenChange(false);
+  }
 
   return (
     <AnimatePresence>
@@ -59,19 +89,39 @@ export function DocumentViewer({ open, onOpenChange, document, citation }: Docum
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="fixed right-0 top-0 h-full w-[480px] bg-background border-l shadow-2xl z-50 flex flex-col"
+          className="fixed right-0 top-0 h-full w-[480px] bg-background/80 backdrop-blur-sm border-l shadow-2xl z-50 flex flex-col"
         >
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex-1 min-w-0">
-                <h2 className="font-headline text-lg truncate">{document?.name}</h2>
-                <p className="text-sm text-muted-foreground">Cited passage highlighted below</p>
+                <h2 className="font-headline text-lg">Document Evidence</h2>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full h-8 w-8">
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <ScrollArea className="flex-1">
-            <pre className="whitespace-pre-wrap p-6 font-body text-sm leading-relaxed">{getHighlightedContent()}</pre>
+          <ScrollArea className="flex-1" ref={scrollAreaRef}>
+            <div className="p-4 space-y-4">
+              {citations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+                  <FileText className="h-12 w-12 mb-4"/>
+                  <p className="font-medium">No Evidence Selected</p>
+                  <p className="text-sm">Click a citation number in the answer to view the source document and passage here.</p>
+                </div>
+              ) : (
+                citations.map((citation, index) => {
+                  const doc = documents.find(d => d.id === citation.documentId);
+                  if (!doc) return null;
+                  return (
+                    <EvidenceBlock 
+                      key={`${citation.documentId}-${citation.citationNumber}`}
+                      doc={doc} 
+                      citation={citation} 
+                      ref={el => blockRefs.current[citation.citationNumber] = el}
+                    />
+                  );
+                })
+              )}
+            </div>
           </ScrollArea>
         </motion.div>
       )}
