@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, FileText, FileWarning, HelpCircle } from 'lucide-react';
+import { Send, Sparkles, FileText, HelpCircle, Folder } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
 import { askQuestion } from '@/app/actions';
-import type { ChatMessage as ChatMessageType, Document, Citation } from '@/types';
+import type { ChatMessage as ChatMessageType, Document, Citation, Collection } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from './ui/badge';
 
 interface ChatPanelProps {
   documents: Document[];
+  collections: Collection[];
   selectedDocIds: string[];
   chatHistory: ChatMessageType[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessageType[]>>;
@@ -40,6 +40,7 @@ function SubmitButton() {
 
 export function ChatPanel({
   documents,
+  collections,
   selectedDocIds,
   chatHistory,
   setChatHistory,
@@ -52,6 +53,36 @@ export function ChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedDocuments = documents.filter((doc) => selectedDocIds.includes(doc.id));
+
+  const contextDisplay = useMemo(() => {
+    if (selectedDocIds.length === 0) {
+      return 'No documents selected';
+    }
+
+    const selectedCollections = collections.filter(col => 
+      col.documentIds.length > 0 && col.documentIds.every(id => selectedDocIds.includes(id))
+    );
+
+    const selectedCollectionIds = selectedCollections.map(c => c.id);
+    const selectedCollectionDocIds = new Set(selectedCollections.flatMap(c => c.documentIds));
+    
+    const standaloneDocs = selectedDocuments.filter(doc => !selectedCollectionDocIds.has(doc.id));
+
+    const parts: string[] = [];
+    if (selectedCollections.length > 0) {
+      parts.push(...selectedCollections.map(c => c.name));
+    }
+    if (standaloneDocs.length > 0) {
+      parts.push(...standaloneDocs.map(d => d.name));
+    }
+
+    if (parts.length <= 2) {
+      return parts.join(', ');
+    }
+
+    return `${parts.slice(0, 2).join(', ')} and ${parts.length - 2} more`;
+
+  }, [selectedDocIds, documents, collections]);
 
   useEffect(() => {
     if (state.error) {
@@ -115,15 +146,15 @@ export function ChatPanel({
   return (
     <div className="flex h-full flex-col bg-secondary/50">
        <div className="flex items-center justify-between border-b bg-background p-4">
-        <div className="text-sm text-muted-foreground">
-          Using:{' '}
-          <span className="font-semibold text-foreground">
-            {selectedDocuments.length > 0
-              ? `${selectedDocuments.length} document(s)`
-              : 'No documents selected'}
-          </span>
+        <div className="text-sm text-muted-foreground min-w-0">
+          <div className="flex items-center gap-2 truncate">
+            {selectedDocIds.length > 0 ? <Folder className="h-4 w-4 shrink-0" /> : <FileText className="h-4 w-4 shrink-0" /> }
+            <span className="font-semibold text-foreground truncate" title={contextDisplay}>
+              {contextDisplay}
+            </span>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onSelectDocumentsClick}>
+        <Button variant="outline" size="sm" onClick={onSelectDocumentsClick} className="shrink-0">
           <FileText className="mr-2 h-4 w-4" />
           Select Documents
         </Button>

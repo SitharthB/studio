@@ -37,6 +37,9 @@ export default function AppShell() {
       name: file.name,
       content: 'File content will be processed here.', // Placeholder content
       collectionId: null,
+      type: file.type.split('/')[1]?.toUpperCase() || 'TXT',
+      size: file.size,
+      added: new Date().toISOString(),
     };
 
     if (destination.type === 'new-collection' && destination.name) {
@@ -76,6 +79,7 @@ export default function AppShell() {
         <main className="flex-1 h-[calc(100vh-3.5rem)] md:h-screen">
             <ChatPanel
             documents={documents}
+            collections={collections}
             selectedDocIds={selectedDocs}
             chatHistory={chatHistory}
             setChatHistory={setChatHistory}
