@@ -23,6 +23,9 @@ Outlook:
 We are projecting a 25% revenue growth for Q4, driven by international expansion and the upcoming "Nova Plus" release. The team is confident in meeting these targets.
 `,
     collectionId: 'col-1',
+    type: 'PDF',
+    size: 276480, // 270 KB
+    added: '2022-10-15T10:00:00Z',
   },
   {
     id: 'doc-2',
@@ -43,6 +46,9 @@ Conclusion:
 The future belongs to companies that can innovate rapidly while maintaining a strong ethical posture. Strategic partnerships and a focus on specialized, high-value AI applications will be crucial for long-term success.
 `,
     collectionId: 'col-1',
+    type: 'PDF',
+    size: 512000, // 500 KB
+    added: '2023-01-20T14:30:00Z',
   },
   {
     id: 'doc-3',
@@ -68,6 +74,9 @@ Recent Moves:
 InnovateCorp recently acquired "DataWeave," a data analytics startup, signaling a move towards a more comprehensive data intelligence platform. Their latest funding round raised $50M, which will likely be invested in marketing and sales expansion. Their focus is clearly on capturing the mid-market segment.
 `,
     collectionId: 'col-2',
+    type: 'TXT',
+    size: 51200, // 50 KB
+    added: '2021-11-30T09:00:00Z'
   },
   {
     id: 'doc-4',
@@ -89,14 +98,35 @@ Security:
 All services are containerized using Docker and orchestrated with Kubernetes. We enforce end-to-end encryption and follow the principle of least privilege for all service-to-service communication.
 `,
     collectionId: null,
+    type: 'TXT',
+    size: 25600, // 25 KB
+    added: '2023-05-10T18:00:00Z',
   },
+  {
+    id: 'doc-5',
+    name: 'Q1 2023 Financials.xlsx',
+    content: 'Spreadsheet content for Q1 2023 financials.',
+    collectionId: 'col-1',
+    type: 'XLSX',
+    size: 256000, // 250KB
+    added: '2022-04-12T11:00:00Z'
+  },
+  {
+    id: 'doc-6',
+    name: 'Q2 2023 Financials.xlsx',
+    content: 'Spreadsheet content for Q2 2023 financials.',
+    collectionId: 'col-1',
+    type: 'XLSX',
+    size: 266240, // 260KB
+    added: '2022-07-15T11:00:00Z'
+  }
 ];
 
 export const collections: Collection[] = [
   {
     id: 'col-1',
     name: 'Q3 Business Review',
-    documentIds: ['doc-1', 'doc-2'],
+    documentIds: ['doc-1', 'doc-2', 'doc-5', 'doc-6'],
   },
   {
     id: 'col-2',

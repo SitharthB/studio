@@ -3,6 +3,9 @@ export type Document = {
   name: string;
   content: string;
   collectionId: string | null;
+  type: string;
+  size: number; // in bytes
+  added: string; // ISO 8601 date string
 };
 
 export type Collection = {
