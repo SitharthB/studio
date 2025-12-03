@@ -94,6 +94,7 @@ export default function AppShell() {
         open={isDocSelectOpen}
         onOpenChange={setIsDocSelectOpen}
         documents={documents}
+        collections={collections}
         selectedDocIds={selectedDocs}
         onSelectedDocIdsChange={setSelectedDocs}
       />
