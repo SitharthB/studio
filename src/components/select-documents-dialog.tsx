@@ -74,7 +74,7 @@ export function SelectDocumentsDialog({
   onSelectedDocIdsChange,
 }: SelectDocumentsDialogProps) {
   const [localSelectedIds, setLocalSelectedIds] = useState(selectedDocIds);
-  const [activeContext, setActiveContext] = useState<string>('all'); // 'all', 'recent', or collection id
+  const [activeContext, setActiveContext] = useState<string>('all'); // 'all', 'recent', collection id or 'standalone'
 
   useEffect(() => {
     if (open) {
@@ -82,16 +82,22 @@ export function SelectDocumentsDialog({
     }
   }, [selectedDocIds, open]);
 
+  const standaloneDocuments = useMemo(() => documents.filter(doc => !doc.collectionId), [documents]);
+
   const displayedDocuments = useMemo(() => {
     if (activeContext === 'all') {
       return documents;
     }
     if (activeContext === 'recent') {
       // Simple logic: return last 5 added documents.
+      // Make sure date parsing is correct, assuming 'added' is a valid date string
       return [...documents].sort((a, b) => new Date(b.added).getTime() - new Date(a.added).getTime()).slice(0, 5);
     }
+    if (activeContext === 'standalone') {
+        return standaloneDocuments;
+    }
     return documents.filter((doc) => doc.collectionId === activeContext);
-  }, [documents, activeContext]);
+  }, [documents, activeContext, standaloneDocuments]);
 
   const handleSave = () => {
     onSelectedDocIdsChange(localSelectedIds);
@@ -163,32 +169,21 @@ export function SelectDocumentsDialog({
             </div>
             <Separator className="my-2" />
              <ScrollArea className="flex-1">
-              <div className="p-2 space-y-4">
-                <div>
-                  <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase flex items-center gap-2"><Pin className="h-3 w-3" /> Pinned</h3>
-                  <div className="mt-2 space-y-1">
-                    {collections.map(col => (
-                       <div key={col.id} className="group flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                id={`col-${col.id}`}
-                                checked={isCollectionSelected(col.id)}
-                                onCheckedChange={(checked) => handleCollectionCheckedChange(col.id, !!checked)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="data-[state=indeterminate]:bg-primary/50"
-                                aria-label={`Select all documents in ${col.name}`}
-                                ref={el => el && (el.dataset.state = isCollectionIndeterminate(col.id) ? 'indeterminate' : (isCollectionSelected(col.id) ? 'checked' : 'unchecked'))}
-                            />
-                            <button className="flex items-center gap-2 text-sm" onClick={() => setActiveContext(col.id)}>
-                                <Folder className="h-4 w-4 text-primary"/>
-                                <span>{col.name}</span>
-                            </button>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{col.documentIds.length}</span>
-                       </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="p-2 space-y-1">
+                 {collections.map(col => (
+                   <Button key={col.id} variant={activeContext === col.id ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext(col.id)}>
+                    <Folder className="h-4 w-4 text-primary"/>
+                    <span>{col.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
+                   </Button>
+                ))}
+                {standaloneDocuments.length > 0 && (
+                    <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext('standalone')}>
+                        <FileText className="h-4 w-4"/>
+                        <span>Standalone Documents</span>
+                         <span className="ml-auto text-xs text-muted-foreground">{standaloneDocuments.length}</span>
+                    </Button>
+                )}
               </div>
             </ScrollArea>
           </div>
