@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UploadCloud, File as FileIcon, Package, PlusCircle, Folder, FolderPlus, CheckCircle, ChevronDown, X } from 'lucide-react';
+import { UploadCloud, File as FileIcon, Folder, FolderPlus, ChevronDown, X } from 'lucide-react';
 import { Collection } from '@/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
@@ -119,7 +119,7 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Upload Document</DialogTitle>
+          <DialogTitle className="font-medium">Upload Document</DialogTitle>
           <DialogDescription>Upload a file to start asking questions.</DialogDescription>
         </DialogHeader>
 
@@ -129,7 +129,7 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
             <TabsTrigger value="drive" disabled>Google Drive</TabsTrigger>
             <TabsTrigger value="onedrive" disabled>OneDrive</TabsTrigger>
           </TabsList>
-          <TabsContent value="local" className="py-4">
+          <TabsContent value="local" className="py-6">
             {!file ? (
                 <div
                 className={cn(
@@ -144,35 +144,30 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
                 <input
                     ref={fileInputRef}
                     type="file"
-                    className="absolute h-full w-full opacity-0 cursor-pointer"
+                    className="absolute h-full w-full cursor-pointer"
                     onChange={handleFileSelect}
+                    style={{ opacity: 0 }}
                 />
                 <div className="flex flex-col items-center gap-2 text-center pointer-events-none">
                     <UploadCloud className="h-10 w-10 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Drag & drop a file here, or click to browse</p>
+                    <p className="text-sm text-muted-foreground">Drag &amp; drop or click to upload</p>
                 </div>
                 </div>
             ) : (
-                <Card>
+                <Card className="shadow-sm">
                     <CardContent className="flex items-center gap-4 p-4">
                         <FileIcon className="h-8 w-8 text-primary"/>
                         <div className="flex-grow">
                             <p className="text-sm font-semibold truncate">{file.name}</p>
                             <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => resetState()}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => resetState()}>
                             <X className="h-4 w-4"/>
                             <span className="sr-only">Remove file</span>
                         </Button>
                     </CardContent>
                 </Card>
             )}
-          </TabsContent>
-          <TabsContent value="drive">
-              {/* Placeholder for Google Drive Integration */}
-          </TabsContent>
-          <TabsContent value="onedrive">
-              {/* Placeholder for OneDrive Integration */}
           </TabsContent>
         </Tabs>
         
@@ -182,54 +177,62 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
             <CollapsibleTrigger asChild>
                 <button className="flex w-full items-center justify-between text-sm font-medium">
                     <span>Add to Collection (Optional)</span>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", isCollectionsOpen && "rotate-180")}/>
+                    <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isCollectionsOpen && "rotate-180")}/>
                 </button>
             </CollapsibleTrigger>
-            <CollapsibleContent>
+            <CollapsibleContent className="space-y-2 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
                 <RadioGroup value={collectionOption || ""} onValueChange={(val) => setCollectionOption(val as 'existing' | 'new' | null)}>
-                    <div className="space-y-2">
-                        <Label htmlFor="existing" className={cn("flex cursor-pointer flex-col gap-2 rounded-md border p-4 transition-colors hover:bg-accent/50", collectionOption === 'existing' && 'border-primary ring-2 ring-primary')}>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="existing" id="existing" />
-                                <div className="flex items-center gap-2 font-medium">
-                                    <Folder className="h-4 w-4 text-muted-foreground" /> Existing Collection
-                                </div>
+                    
+                    <Label htmlFor="existing-collection" className={cn(
+                        "flex flex-col gap-2 rounded-lg border p-4 cursor-pointer transition-colors hover:bg-accent/50",
+                        collectionOption === 'existing' && 'border-primary bg-accent/50 ring-1 ring-primary'
+                    )}>
+                        <div className="flex items-center space-x-3">
+                            <RadioGroupItem value="existing" id="existing-collection" />
+                            <div className="flex items-center gap-2 font-medium">
+                                <Folder className="h-4 w-4 text-muted-foreground" />
+                                <span>Existing Collection</span>
                             </div>
-                            {collectionOption === 'existing' && (
-                                <div className="pl-6 pt-2">
-                                    <Select onValueChange={setSelectedCollection} value={selectedCollection}>
-                                        <SelectTrigger>
+                        </div>
+                        {collectionOption === 'existing' && (
+                            <div className="pl-8 pt-2">
+                                <Select onValueChange={setSelectedCollection} value={selectedCollection}>
+                                    <SelectTrigger onClick={(e) => e.preventDefault()}>
                                         <SelectValue placeholder="Select a collection" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                        {collections.map((col) => (
-                                            <SelectItem key={col.id} value={col.id}>{col.name}</SelectItem>
-                                        ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-                        </Label>
-
-                        <Label htmlFor="new" className={cn("flex cursor-pointer flex-col gap-2 rounded-md border p-4 transition-colors hover:bg-accent/50", collectionOption === 'new' && 'border-primary ring-2 ring-primary')}>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="new" id="new" />
-                                <div className="flex items-center gap-2 font-medium">
-                                    <FolderPlus className="h-4 w-4 text-muted-foreground"/> New Collection
-                                </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    {collections.map((col) => (
+                                        <SelectItem key={col.id} value={col.id}>{col.name}</SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            {collectionOption === 'new' && (
-                                <div className="pl-6 pt-2">
+                        )}
+                    </Label>
+
+                    <Label htmlFor="new-collection" className={cn(
+                        "flex flex-col gap-2 rounded-lg border p-4 cursor-pointer transition-colors hover:bg-accent/50",
+                        collectionOption === 'new' && 'border-primary bg-accent/50 ring-1 ring-primary'
+                    )}>
+                        <div className="flex items-center space-x-3">
+                            <RadioGroupItem value="new" id="new-collection" />
+                            <div className="flex items-center gap-2 font-medium">
+                                <FolderPlus className="h-4 w-4 text-muted-foreground"/>
+                                <span>New Collection</span>
+                            </div>
+                        </div>
+                        {collectionOption === 'new' && (
+                            <div className="pl-8 pt-2">
                                 <Input 
                                     placeholder="E.g. 'Marketing Reports'"
                                     value={newCollectionName}
                                     onChange={(e) => setNewCollectionName(e.target.value)}
-                                    onClick={(e) => e.preventDefault()} // Prevent label click from toggling radio
+                                    onClick={(e) => e.preventDefault()}
                                 />
-                                </div>
-                            )}
-                        </Label>
-                    </div>
+                            </div>
+                        )}
+                    </Label>
+
                 </RadioGroup>
             </CollapsibleContent>
         </Collapsible>
