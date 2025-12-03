@@ -22,7 +22,7 @@ import {
   Pin,
   List,
   ChevronDown,
-  Xlsx,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -59,7 +59,7 @@ function FileTypeIcon({ type }: { type: string }) {
     return <FileText className="h-5 w-5 text-gray-500" />;
   }
    if (type.toLowerCase() === 'xlsx') {
-    return <Xlsx className="h-5 w-5 text-green-500" />;
+    return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
   }
   return <FileText className="h-5 w-5 text-gray-400" />;
 }
