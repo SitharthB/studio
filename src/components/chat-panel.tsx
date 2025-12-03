@@ -35,10 +35,10 @@ const initialSummaryState = {
 };
 
 
-function SubmitButton({ icon, children }: { icon: React.ReactNode, children?: React.ReactNode }) {
+function SubmitButton({ icon, children, disabled }: { icon: React.ReactNode, children?: React.ReactNode, disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size={children ? 'default' : 'icon'} disabled={pending}>
+    <Button type="submit" size={children ? 'default' : 'icon'} disabled={pending || disabled}>
       {pending ? <Sparkles className="h-5 w-5 animate-pulse" /> : icon}
       {children}
       <span className="sr-only">Send</span>
@@ -65,6 +65,8 @@ export function ChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedDocuments = documents.filter((doc) => selectedDocIds.includes(doc.id));
+
+  const isAIThinking = chatHistory.some(msg => msg.isLoading);
 
   const contextDisplay = useMemo(() => {
     if (selectedDocIds.length === 0) {
@@ -157,7 +159,7 @@ export function ChatPanel({
 
   const handleFormSubmit = (formData: FormData) => {
     const question = formData.get('question') as string;
-    if (!question.trim()) return;
+    if (!question.trim() || isAIThinking) return;
 
     onNewQuestion();
 
@@ -179,6 +181,7 @@ export function ChatPanel({
   };
   
   const handleSummarySubmit = (formData: FormData) => {
+    if (isAIThinking) return;
     onNewQuestion();
     
     const summaryRequestMessage: ChatMessageType = {
@@ -236,8 +239,8 @@ export function ChatPanel({
                     name="documents"
                     value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
                 />
-                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected}>
-                    <BookText className="mr-2 h-4 w-4" />
+                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected || isAIThinking}>
+                    {isAIThinking ? <Sparkles className="mr-2 h-4 w-4 animate-pulse" /> : <BookText className="mr-2 h-4 w-4" />}
                     Summarize Selected
                 </Button>
             </form>
@@ -280,7 +283,7 @@ export function ChatPanel({
                 }
                 className="flex-1 resize-none border-none shadow-none focus-visible:ring-0"
                 rows={1}
-                disabled={selectedDocuments.length === 0}
+                disabled={selectedDocuments.length === 0 || isAIThinking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -288,7 +291,7 @@ export function ChatPanel({
                   }
                 }}
               />
-              <SubmitButton icon={<Send className="h-5 w-5" />} />
+              <SubmitButton icon={<Send className="h-5 w-5" />} disabled={isAIThinking} />
             </form>
           </CardContent>
         </Card>
