@@ -5,24 +5,16 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { DocumentSidebar } from '@/components/document-sidebar';
 import { ChatPanel } from '@/components/chat-panel';
 import { DocumentViewer } from '@/components/document-viewer';
-import { collections as initialCollections, documents as initialDocuments } from '@/lib/data';
-import type { Collection, Document, ChatMessage, Citation } from '@/types';
+import { documents as initialDocuments } from '@/lib/data';
+import type { Document, ChatMessage, Citation } from '@/types';
+import { SelectDocumentsDialog } from './select-documents-dialog';
 
 export default function AppShell() {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [viewingCitation, setViewingCitation] = useState<{ doc: Document, citation: Citation } | null>(null);
-
-  const handleDocSelect = (docId: string, isSelected: boolean) => {
-    setSelectedDocs((prev) => {
-      if (isSelected) {
-        return [...prev, docId];
-      } else {
-        return prev.filter((id) => id !== docId);
-      }
-    });
-  };
+  const [isDocSelectOpen, setIsDocSelectOpen] = useState(false);
 
   const handleCitationClick = (citation: Citation) => {
     const doc = documents.find((d) => d.id === citation.documentId);
@@ -36,7 +28,7 @@ export default function AppShell() {
       <DocumentSidebar
         documents={documents}
         selectedDocs={selectedDocs}
-        onDocSelect={handleDocSelect}
+        onDocSelect={() => {}}
       />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -49,6 +41,7 @@ export default function AppShell() {
             chatHistory={chatHistory}
             setChatHistory={setChatHistory}
             onCitationClick={handleCitationClick}
+            onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
             />
         </main>
       </SidebarInset>
@@ -57,6 +50,13 @@ export default function AppShell() {
         onOpenChange={(open) => !open && setViewingCitation(null)}
         document={viewingCitation?.doc ?? null}
         citation={viewingCitation?.citation ?? null}
+      />
+      <SelectDocumentsDialog
+        open={isDocSelectOpen}
+        onOpenChange={setIsDocSelectOpen}
+        documents={documents}
+        selectedDocIds={selectedDocs}
+        onSelectedDocIdsChange={setSelectedDocs}
       />
     </SidebarProvider>
   );
