@@ -57,8 +57,8 @@ export async function askQuestion(
     }) || [];
 
     return { answer: result.answer, citations: remappedCitations };
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return { error: 'Failed to get an answer from the AI. Please try again.' };
+    return { error: e.message || 'Failed to get an answer from the AI. Please try again.' };
   }
 }
