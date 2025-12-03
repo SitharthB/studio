@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, FileText, HelpCircle, Folder, BookText } from 'lucide-react';
+import { Send, Sparkles, FileText, HelpCircle, Folder, BookText, Globe } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
-import { askQuestion, summarizeDocuments } from '@/app/actions';
+import { askQuestion, summarizeDocuments, searchWeb } from '@/app/actions';
 import type { ChatMessage as ChatMessageType, Document, Citation, Collection } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
+import { cn } from '@/lib/utils';
 
 interface ChatPanelProps {
   documents: Document[];
@@ -31,6 +34,11 @@ const initialQuestionState = {
 
 const initialSummaryState = {
     summary: undefined,
+    error: undefined,
+};
+
+const initialWebSearchState = {
+    answer: undefined,
     error: undefined,
 };
 
@@ -58,6 +66,9 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [questionState, questionFormAction] = useFormState(askQuestion, initialQuestionState);
   const [summaryState, summaryFormAction] = useFormState(summarizeDocuments, initialSummaryState);
+  const [webSearchState, webSearchFormAction] = useFormState(searchWeb, initialWebSearchState);
+  
+  const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
   
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
@@ -69,6 +80,9 @@ export function ChatPanel({
   const isAIThinking = chatHistory.some(msg => msg.isLoading);
 
   const contextDisplay = useMemo(() => {
+    if (isWebSearchEnabled) {
+      return { icon: Globe, text: 'Searching the web' };
+    }
     if (selectedDocIds.length === 0) {
       return { icon: FileText, text: 'No documents selected' };
     }
@@ -93,33 +107,34 @@ export function ChatPanel({
 
     return { icon: isCollectionSelected ? Folder : FileText, parts };
 
-  }, [selectedDocIds, documents, collections]);
+  }, [selectedDocIds, documents, collections, isWebSearchEnabled]);
 
   useEffect(() => {
-    if (questionState.error) {
+    const state = isWebSearchEnabled ? webSearchState : questionState;
+    if (state.error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: questionState.error,
+        description: state.error,
       });
       setChatHistory((prev) => prev.filter((msg) => !msg.isLoading));
     }
-    if (questionState.answer) {
+    if (state.answer) {
       setChatHistory((prev) =>
         prev.map((msg) =>
           msg.isLoading && msg.role === 'assistant'
             ? {
                 ...msg,
                 isLoading: false,
-                text: questionState.answer ?? '',
-                citations: questionState.citations,
+                text: state.answer ?? '',
+                citations: (state as any).citations,
               }
             : msg
         )
       );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionState]);
+  }, [questionState, webSearchState]);
   
   useEffect(() => {
     if (summaryState.error) {
@@ -176,8 +191,15 @@ export function ChatPanel({
     };
 
     setChatHistory((prev) => [...prev, newQuestionMessage, loadingMessage]);
-    questionFormAction(formData);
+
+    if (isWebSearchEnabled) {
+        webSearchFormAction(formData);
+    } else {
+        questionFormAction(formData);
+    }
+    
     formRef.current?.reset();
+    // Keep the web search toggle state as is
   };
   
   const handleSummarySubmit = (formData: FormData) => {
@@ -224,7 +246,7 @@ export function ChatPanel({
             </div>
           ) : (
             <>
-              <ContextIcon className="h-4 w-4 shrink-0" />
+              <ContextIcon className={cn("h-4 w-4 shrink-0", isWebSearchEnabled && "text-primary")} />
               <span className="font-semibold text-foreground truncate" title={contextDisplay.text}>
                 {contextDisplay.text}
               </span>
@@ -239,12 +261,12 @@ export function ChatPanel({
                     name="documents"
                     value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
                 />
-                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected || isAIThinking}>
+                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected || isAIThinking || isWebSearchEnabled}>
                     {isAIThinking ? <Sparkles className="mr-2 h-4 w-4 animate-pulse" /> : <BookText className="mr-2 h-4 w-4" />}
                     Summarize Selected
                 </Button>
             </form>
-            <Button variant="outline" size="sm" onClick={onSelectDocumentsClick}>
+            <Button variant="outline" size="sm" onClick={onSelectDocumentsClick} disabled={isWebSearchEnabled}>
                 <FileText className="mr-2 h-4 w-4" />
                 {selectedDocIds.length > 0 ? 'Change Documents' : 'Select Documents'}
             </Button>
@@ -274,16 +296,19 @@ export function ChatPanel({
                 name="documents"
                 value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
               />
+              <input type="hidden" name="webSearch" value={String(isWebSearchEnabled)} />
               <Textarea
                 name="question"
                 placeholder={
-                  selectedDocuments.length > 0
-                    ? `Ask a question...`
-                    : 'Select a document to start chatting'
+                  isWebSearchEnabled 
+                    ? 'Ask the web anything...' 
+                    : selectedDocuments.length > 0
+                      ? 'Ask a question...'
+                      : 'Select a document to start chatting'
                 }
                 className="flex-1 resize-none border-none shadow-none focus-visible:ring-0"
                 rows={1}
-                disabled={selectedDocuments.length === 0 || isAIThinking}
+                disabled={(selectedDocuments.length === 0 && !isWebSearchEnabled) || isAIThinking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -294,6 +319,17 @@ export function ChatPanel({
               <SubmitButton icon={<Send className="h-5 w-5" />} disabled={isAIThinking} />
             </form>
           </CardContent>
+          <CardFooter className="px-2 py-1 justify-end">
+            <div className="flex items-center space-x-2">
+                <Switch 
+                    id="web-search-toggle" 
+                    checked={isWebSearchEnabled}
+                    onCheckedChange={setIsWebSearchEnabled}
+                    disabled={isAIThinking}
+                />
+                <Label htmlFor="web-search-toggle" className="text-xs text-muted-foreground">Web Search</Label>
+            </div>
+          </CardFooter>
         </Card>
       </div>
     </div>
@@ -308,7 +344,7 @@ function WelcomeScreen({ selectedCount }: { selectedCount: number }) {
         </div>
       <h1 className="mt-6 font-headline text-3xl font-semibold">Ready to answer your questions</h1>
       <p className="mt-2 text-muted-foreground max-w-sm">
-        Ask a question about the documents you&apos;ve selected to start a conversation.
+        Ask a question about the documents you&apos;ve selected, or toggle on web search to ask the internet.
       </p>
       <div className="mt-8">
         {selectedCount === 0 && (

@@ -2,6 +2,7 @@
 
 import { answerQuestionsAboutDocuments } from '@/ai/flows/answer-questions-about-documents';
 import { generateSummaryOfDocuments } from '@/ai/flows/generate-summary-of-documents';
+import { searchWebFlow } from '@/ai/flows/search-web';
 import { z } from 'zod';
 import type { Citation } from '@/types';
 
@@ -20,6 +21,10 @@ const SummarizeDocumentsSchema = z.object({
     documents: z.array(DocumentSchema),
 });
 
+const SearchWebSchema = z.object({
+  question: z.string().min(1, 'Question cannot be empty.'),
+});
+
 type AskQuestionState = {
   answer?: string;
   citations?: Citation[];
@@ -30,6 +35,11 @@ type SummarizeState = {
   summary?: string;
   error?: string;
 };
+
+type WebSearchState = {
+    answer?: string;
+    error?: string;
+}
 
 
 export async function askQuestion(
@@ -93,11 +103,10 @@ export async function summarizeDocuments(
     }
 
     try {
-        // Combine all document content into a single string.
         const combinedContent = documents.map(d => {
             return `--- Document: ${d.name} ---\n\n${d.content}`;
         }).join('\n\n');
-
+        
         const result = await generateSummaryOfDocuments({
             documents: combinedContent,
         });
@@ -106,5 +115,28 @@ export async function summarizeDocuments(
     } catch (e: any) {
         console.error(e);
         return { error: e.message || 'Failed to generate summary. Please try again.' };
+    }
+}
+
+export async function searchWeb(
+    prevState: WebSearchState,
+    formData: FormData
+): Promise<WebSearchState> {
+    const parsed = SearchWebSchema.safeParse({
+        question: formData.get('question'),
+    });
+
+    if (!parsed.success) {
+        return { error: 'Invalid input for web search.' };
+    }
+
+    const { question } = parsed.data;
+
+    try {
+        const result = await searchWebFlow({ query: question });
+        return { answer: result.answer };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Failed to get an answer from the web. Please try again.' };
     }
 }
