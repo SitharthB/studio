@@ -9,6 +9,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { generateSummaryOfDocument } from './generate-summary-of-document';
+
 
 const DocumentSchema = z.object({
   name: z.string().describe('The name of the document.'),
@@ -31,16 +33,16 @@ export async function generateSummaryOfDocuments(input: GenerateSummaryOfDocumen
 
 const prompt = ai.definePrompt({
   name: 'generateSummaryOfDocumentsPrompt',
-  input: {schema: GenerateSummaryOfDocumentsInputSchema},
+  input: {schema: z.object({
+    documentSummaries: z.array(z.string()).describe('The summaries of the documents to combine.')
+  })},
   output: {schema: GenerateSummaryOfDocumentsOutputSchema},
-  prompt: `Provide a concise and structured summary that synthesizes the key information from the following documents. The summary should represent the combined insights from all provided texts.
+  prompt: `Provide a concise and structured summary that synthesizes the key information from the following document summaries. The summary should represent the combined insights from all provided texts.
 
-  Documents:
-  {{#each documents}}
+  Summaries:
+  {{#each documentSummaries}}
   ---
-  Document Name: {{{name}}}
-
-  {{{content}}}
+  {{{this}}}
   ---
   {{/each}}
   `,
@@ -53,7 +55,14 @@ const generateSummaryOfDocumentsFlow = ai.defineFlow(
     outputSchema: GenerateSummaryOfDocumentsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const summaries = await Promise.all(
+        input.documents.map(async (doc) => {
+            const singleSummary = await generateSummaryOfDocument({ documentText: doc.content });
+            return `Document: ${doc.name}\nSummary: ${singleSummary.summary}`;
+        })
+    );
+
+    const {output} = await prompt({documentSummaries: summaries});
     return output!;
   }
 );
