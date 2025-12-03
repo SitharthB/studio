@@ -9,7 +9,6 @@ import { collections as initialCollections, documents as initialDocuments } from
 import type { Collection, Document, ChatMessage, Citation } from '@/types';
 
 export default function AppShell() {
-  const [collections, setCollections] = useState<Collection[]>(initialCollections);
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -35,7 +34,6 @@ export default function AppShell() {
   return (
     <SidebarProvider>
       <DocumentSidebar
-        collections={collections}
         documents={documents}
         selectedDocs={selectedDocs}
         onDocSelect={handleDocSelect}

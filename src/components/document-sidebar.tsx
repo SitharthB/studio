@@ -2,7 +2,6 @@
 
 import React from 'react';
 import {
-  FolderKanban,
   FileText,
   Plus,
   MoreHorizontal,
@@ -10,6 +9,7 @@ import {
   PenSquare,
   ArrowRightLeft,
   History,
+  FolderKanban,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -24,12 +24,6 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -39,12 +33,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
-import type { Collection, Document } from '@/types';
+import type { Document } from '@/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 interface DocumentSidebarProps {
-  collections: Collection[];
   documents: Document[];
   selectedDocs: string[];
   onDocSelect: (docId: string, isSelected: boolean) => void;
@@ -52,13 +45,11 @@ interface DocumentSidebarProps {
 }
 
 export function DocumentSidebar({
-  collections,
   documents,
   selectedDocs,
   onDocSelect,
   className,
 }: DocumentSidebarProps) {
-  const standaloneFiles = documents.filter((doc) => !doc.collectionId);
 
   return (
     <Sidebar
@@ -76,54 +67,18 @@ export function DocumentSidebar({
           </Button>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
+          <Button variant="outline" className="w-full">
             <FolderKanban className="mr-2" />
-            Collections
-          </SidebarGroupLabel>
-          <Accordion type="multiple" className="w-full">
-            {collections.map((collection) => (
-              <AccordionItem value={collection.id} key={collection.id} className="border-none">
-                <div className="group/item flex w-full items-center">
-                  <AccordionTrigger className="w-full py-1 text-sm text-sidebar-foreground hover:no-underline hover:text-sidebar-accent-foreground">
-                    {collection.name}
-                  </AccordionTrigger>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/item:opacity-100">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem><PenSquare className="mr-2"/>Rename</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/>Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <AccordionContent className="pl-4">
-                  {collection.documentIds.map((docId) => {
-                    const doc = documents.find((d) => d.id === docId);
-                    if (!doc) return null;
-                    return (
-                      <DocumentItem
-                        key={doc.id}
-                        doc={doc}
-                        isSelected={selectedDocs.includes(doc.id)}
-                        onSelect={onDocSelect}
-                      />
-                    );
-                  })}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+            Manage Collections
+          </Button>
         </SidebarGroup>
         <SidebarSeparator />
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center">
             <FileText className="mr-2" />
-            Standalone Files
+            All Files
           </SidebarGroupLabel>
-          {standaloneFiles.map((doc) => (
+          {documents.map((doc) => (
             <DocumentItem
               key={doc.id}
               doc={doc}
