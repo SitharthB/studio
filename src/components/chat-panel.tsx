@@ -6,9 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, FileText, HelpCircle, Folder } from 'lucide-react';
+import { Send, Sparkles, FileText, HelpCircle, Folder, BookText } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
-import { askQuestion } from '@/app/actions';
+import { askQuestion, summarizeDocuments } from '@/app/actions';
 import type { ChatMessage as ChatMessageType, Document, Citation, Collection } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,17 +23,24 @@ interface ChatPanelProps {
   onNewQuestion: () => void;
 }
 
-const initialState = {
+const initialQuestionState = {
   answer: undefined,
   citations: undefined,
   error: undefined,
 };
 
-function SubmitButton() {
+const initialSummaryState = {
+    summary: undefined,
+    error: undefined,
+};
+
+
+function SubmitButton({ icon, children }: { icon: React.ReactNode, children?: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="icon" disabled={pending}>
-      {pending ? <Sparkles className="h-5 w-5 animate-pulse" /> : <Send className="h-5 w-5" />}
+    <Button type="submit" size={children ? 'default' : 'icon'} disabled={pending}>
+      {pending ? <Sparkles className="h-5 w-5 animate-pulse" /> : icon}
+      {children}
       <span className="sr-only">Send</span>
     </Button>
   );
@@ -49,9 +56,12 @@ export function ChatPanel({
   onSelectDocumentsClick,
   onNewQuestion,
 }: ChatPanelProps) {
-  const [state, formAction] = useFormState(askQuestion, initialState);
+  const [questionState, questionFormAction] = useFormState(askQuestion, initialQuestionState);
+  const [summaryState, summaryFormAction] = useFormState(summarizeDocuments, initialSummaryState);
+  
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const summaryFormRef = useRef<HTMLFormElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedDocuments = documents.filter((doc) => selectedDocIds.includes(doc.id));
@@ -84,34 +94,58 @@ export function ChatPanel({
   }, [selectedDocIds, documents, collections]);
 
   useEffect(() => {
-    if (state.error) {
+    if (questionState.error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: state.error,
+        description: questionState.error,
       });
-      // Remove loading message on error
       setChatHistory((prev) => prev.filter((msg) => !msg.isLoading));
     }
-    if (state.answer) {
+    if (questionState.answer) {
       setChatHistory((prev) =>
         prev.map((msg) =>
-          msg.isLoading
+          msg.isLoading && msg.role === 'assistant'
             ? {
                 ...msg,
                 isLoading: false,
-                text: state.answer ?? '',
-                citations: state.citations,
+                text: questionState.answer ?? '',
+                citations: questionState.citations,
               }
             : msg
         )
       );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  }, [questionState]);
+  
+  useEffect(() => {
+    if (summaryState.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: summaryState.error,
+      });
+      setChatHistory((prev) => prev.filter((msg) => !msg.isLoading));
+    }
+    if (summaryState.summary) {
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.isLoading && msg.role === 'assistant'
+            ? {
+                ...msg,
+                isLoading: false,
+                text: summaryState.summary ?? '',
+              }
+            : msg
+        )
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryState]);
+
 
   useEffect(() => {
-    // Scroll to bottom when chat history changes
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
         if (viewport) {
@@ -140,15 +174,36 @@ export function ChatPanel({
     };
 
     setChatHistory((prev) => [...prev, newQuestionMessage, loadingMessage]);
-    formAction(formData);
+    questionFormAction(formData);
     formRef.current?.reset();
+  };
+  
+  const handleSummarySubmit = (formData: FormData) => {
+    onNewQuestion();
+    
+    const summaryRequestMessage: ChatMessageType = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        text: `Summarize the selected document(s).`,
+    };
+    
+    const loadingMessage: ChatMessageType = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        text: '',
+        isLoading: true,
+    };
+
+    setChatHistory((prev) => [...prev, summaryRequestMessage, loadingMessage]);
+    summaryFormAction(formData);
   };
 
   const ContextIcon = contextDisplay.icon;
+  const isContextSelected = selectedDocIds.length > 0;
 
   return (
     <div className="flex h-full flex-col bg-secondary/50">
-       <div className="flex items-center justify-between border-b bg-background p-4">
+       <div className="flex items-center justify-between border-b bg-background p-4 gap-4">
         <div className="text-sm text-muted-foreground min-w-0">
           <div className="flex items-center gap-2 truncate">
           {Array.isArray(contextDisplay.parts) ? (
@@ -174,10 +229,23 @@ export function ChatPanel({
           )}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onSelectDocumentsClick} className="shrink-0">
-          <FileText className="mr-2 h-4 w-4" />
-          {selectedDocIds.length > 0 ? 'Change Documents' : 'Select Documents'}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+            <form ref={summaryFormRef} action={handleSummarySubmit}>
+                 <input
+                    type="hidden"
+                    name="documents"
+                    value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
+                />
+                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected}>
+                    <BookText className="mr-2 h-4 w-4" />
+                    Summarize Selected
+                </Button>
+            </form>
+            <Button variant="outline" size="sm" onClick={onSelectDocumentsClick}>
+                <FileText className="mr-2 h-4 w-4" />
+                {selectedDocIds.length > 0 ? 'Change Documents' : 'Select Documents'}
+            </Button>
+        </div>
       </div>
       <div className="flex-1 overflow-hidden bg-background">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
@@ -220,7 +288,7 @@ export function ChatPanel({
                   }
                 }}
               />
-              <SubmitButton />
+              <SubmitButton icon={<Send className="h-5 w-5" />} />
             </form>
           </CardContent>
         </Card>
