@@ -32,7 +32,7 @@ const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, cita
     return (
       <p className="whitespace-pre-wrap font-body text-sm leading-relaxed text-muted-foreground">
         {prePassage.slice(-200)}
-        <mark className="bg-accent/50 text-foreground rounded-sm px-1">
+        <mark className="bg-accent/20 text-foreground rounded-sm px-1">
           {passage}
         </mark>
         {postPassage.slice(0, 200)}
@@ -88,8 +88,8 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="fixed right-0 top-0 h-full w-[480px] bg-background/80 backdrop-blur-sm border-l shadow-2xl z-50 flex flex-col"
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="w-[480px] h-screen bg-background border-l shadow-2xl z-50 flex flex-col"
         >
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex-1 min-w-0">
@@ -108,7 +108,7 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
                   <p className="text-sm">Click a citation number in the answer to view the source document and passage here.</p>
                 </div>
               ) : (
-                citations.map((citation, index) => {
+                citations.map((citation) => {
                   const doc = documents.find(d => d.id === citation.documentId);
                   if (!doc) return null;
                   return (

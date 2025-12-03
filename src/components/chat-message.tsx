@@ -44,6 +44,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
           );
         }
       }
+      // Use dangerouslySetInnerHTML for parts that may contain HTML, like line breaks
       return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />;
     });
   };

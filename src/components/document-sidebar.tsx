@@ -37,61 +37,58 @@ export function DocumentSidebar({
 }: DocumentSidebarProps) {
 
   return (
-    <Sidebar
-      className={cn("border-r border-sidebar-border", className)}
-      collapsible="icon"
-    >
-      <SidebarHeader>
-        <Logo />
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <Button onClick={onUploadClick} variant="default" className="w-full bg-primary hover:bg-primary/90">
-            <Plus className="mr-2" />
-            Upload Document
-          </Button>
-        </SidebarGroup>
-        <SidebarGroup>
-          <Button variant="outline" className="w-full">
-            <FolderKanban className="mr-2" />
-            Manage Collections
-          </Button>
-        </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <Button variant="ghost" className="w-full justify-start">
-            <MessageSquarePlus className="mr-2" />
-            New Chat
-          </Button>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
-            <History className="mr-2" />
-            Chat History
-          </SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="sm" className="truncate" isActive>Q3 Revenue Analysis</SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="sm" className="truncate">Competitor Strategy</SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton>
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-              <span className="font-medium">John Doe</span>
-              <Badge variant="outline" className="ml-auto">PRO</Badge>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+    <div className={cn("w-[280px] h-screen bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border", className)}>
+        <div className="p-4">
+            <Logo />
+        </div>
+        <div className="p-2 space-y-2">
+            <Button onClick={onUploadClick} variant="default" className="w-full bg-primary hover:bg-primary/90">
+                <Plus className="mr-2" />
+                Upload Document
+            </Button>
+            <Button variant="outline" className="w-full bg-sidebar-accent border-sidebar-border hover:bg-sidebar-accent/80">
+                <FolderKanban className="mr-2" />
+                Manage Collections
+            </Button>
+        </div>
+        <div className="my-2">
+            <SidebarSeparator />
+        </div>
+        <div className="p-2">
+             <Button variant="ghost" className="w-full justify-start hover:bg-sidebar-accent">
+                <MessageSquarePlus className="mr-2" />
+                New Chat
+            </Button>
+        </div>
+        <div className="flex-1 px-2 space-y-2 overflow-y-auto">
+             <SidebarGroupLabel className="flex items-center px-2">
+                <History className="mr-2" />
+                Chat History
+            </SidebarGroupLabel>
+            <div className="space-y-1">
+                <Button variant="ghost" size="sm" className="w-full justify-start truncate bg-sidebar-accent text-sidebar-accent-foreground">
+                    Q3 Revenue Analysis
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start truncate hover:bg-sidebar-accent">
+                    Competitor Strategy
+                </Button>
+                 <Button variant="ghost" size="sm" className="w-full justify-start truncate hover:bg-sidebar-accent">
+                    Market Research Synthesis
+                </Button>
+                 <Button variant="ghost" size="sm" className="w-full justify-start truncate hover:bg-sidebar-accent">
+                    Product Launch Plan
+                </Button>
+            </div>
+        </div>
+         <div className="p-2 mt-auto border-t border-sidebar-border">
+            <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-sidebar-accent">
+                <Avatar className="h-8 w-8">
+                    <AvatarFallback>JD</AvatarFallback>
+                </Avatar>
+                <span className="font-medium">John Doe</span>
+                <Badge variant="outline" className="ml-auto border-sidebar-border">PRO</Badge>
+            </Button>
+        </div>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DocumentSidebar } from '@/components/document-sidebar';
 import { ChatPanel } from '@/components/chat-panel';
 import { DocumentViewer } from '@/components/document-viewer';
@@ -14,7 +13,7 @@ import { cn } from '@/lib/utils';
 export default function AppShell() {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [collections, setCollections] = useState<Collection[]>(initialCollections);
-  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   
   const [isEvidenceViewerOpen, setIsEvidenceViewerOpen] = useState(false);
@@ -81,45 +80,39 @@ export default function AppShell() {
     .filter((d): d is Document => !!d);
 
   return (
-    <SidebarProvider>
+    <div className="flex h-screen w-full bg-background">
       <DocumentSidebar
         onUploadClick={() => setIsUploadDocOpen(true)}
       />
-      <SidebarInset>
-        <div className="flex h-screen w-full">
-            <main className={cn(
-                "flex-1 h-screen transition-[width] duration-300 ease-in-out",
-                 isEvidenceViewerOpen ? "w-[calc(100%-480px)]" : "w-full"
-            )}>
-                <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 md:hidden">
-                    <SidebarTrigger />
-                </header>
-                <ChatPanel
-                documents={documents}
-                collections={collections}
-                selectedDocIds={selectedDocs}
-                chatHistory={chatHistory}
-                setChatHistory={setChatHistory}
-                onCitationClick={handleCitationClick}
-                onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
-                onNewQuestion={handleNewQuestion}
-                />
-            </main>
-             <DocumentViewer
-                open={isEvidenceViewerOpen}
-                onOpenChange={setIsEvidenceViewerOpen}
-                documents={evidenceDocuments}
-                citations={evidenceCitations}
-            />
-        </div>
-      </SidebarInset>
+      <main className={cn(
+          "flex-1 h-screen transition-[width] duration-300 ease-in-out",
+           isEvidenceViewerOpen ? "w-[calc(100%-280px-480px)]" : "w-[calc(100%-280px)]"
+      )}>
+          <ChatPanel
+            documents={documents}
+            collections={collections}
+            selectedDocIds={selectedDocIds}
+            chatHistory={chatHistory}
+            setChatHistory={setChatHistory}
+            onCitationClick={handleCitationClick}
+            onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
+            onNewQuestion={handleNewQuestion}
+          />
+      </main>
+       <DocumentViewer
+          open={isEvidenceViewerOpen}
+          onOpenChange={setIsEvidenceViewerOpen}
+          documents={evidenceDocuments}
+          citations={evidenceCitations}
+      />
+      
       <SelectDocumentsDialog
         open={isDocSelectOpen}
         onOpenChange={setIsDocSelectOpen}
         documents={documents}
         collections={collections}
-        selectedDocIds={selectedDocs}
-        onSelectedDocIdsChange={setSelectedDocs}
+        selectedDocIds={selectedDocIds}
+        onSelectedDocIdsChange={setSelectedDocIds}
       />
       <UploadDocumentDialog
         open={isUploadDocOpen}
@@ -127,6 +120,6 @@ export default function AppShell() {
         collections={collections}
         onUpload={handleUpload}
       />
-    </SidebarProvider>
+    </div>
   );
 }
