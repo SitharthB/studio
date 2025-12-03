@@ -118,6 +118,8 @@ export function UploadDocumentDialog({ open, onOpenChange, collections, onUpload
     if (!file) return false;
     if (collectionOption === 'existing' && !selectedCollection) return false;
     if (collectionOption === 'new' && !newCollectionName.trim()) return false;
+    // If collectionOption is null, it's a standalone upload which is allowed.
+    if (collectionOption === null) return true;
     return true;
   }, [file, collectionOption, selectedCollection, newCollectionName]);
 
