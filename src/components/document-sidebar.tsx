@@ -10,6 +10,7 @@ import {
   ArrowRightLeft,
   History,
   FolderKanban,
+  MessageSquarePlus,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -72,6 +73,12 @@ export function DocumentSidebar({
           </Button>
         </SidebarGroup>
         <SidebarSeparator />
+        <SidebarGroup>
+          <Button variant="ghost" className="w-full justify-start">
+            <MessageSquarePlus className="mr-2" />
+            New Chat
+          </Button>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center">
             <History className="mr-2" />
