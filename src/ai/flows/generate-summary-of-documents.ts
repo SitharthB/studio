@@ -55,14 +55,12 @@ const generateSummaryOfDocumentsFlow = ai.defineFlow(
     outputSchema: GenerateSummaryOfDocumentsOutputSchema,
   },
   async (input) => {
-    // "Map" step: Generate a summary for each document individually.
-    const summaries = await Promise.all(
-      input.documents.map(async (doc) => {
-        // Correctly call the async function from the other module.
-        const singleSummary = await generateSummaryOfDocument({ documentText: doc.content });
-        return `Document: ${doc.name}\nSummary: ${singleSummary.summary}`;
-      })
-    );
+    // "Map" step: Generate a summary for each document sequentially to avoid rate limiting.
+    const summaries: string[] = [];
+    for (const doc of input.documents) {
+      const singleSummary = await generateSummaryOfDocument({ documentText: doc.content });
+      summaries.push(`Document: ${doc.name}\nSummary: ${singleSummary.summary}`);
+    }
 
     // "Reduce" step: Combine the individual summaries into a single master summary.
     const { output } = await prompt({ documentSummaries: summaries });
