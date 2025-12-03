@@ -254,12 +254,12 @@ export function ChatPanel({
                     name="documents"
                     value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
                 />
-                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected || isAIThinking || isWebSearchEnabled}>
-                    {isAIThinking ? <Sparkles className="mr-2 h-4 w-4 animate-pulse" /> : <BookText className="mr-2 h-4 w-4" />}
+                 <Button variant="outline" size="sm" type="submit" disabled={!isContextSelected || isAIThinking}>
+                    {isAIThinking && chatHistory[chatHistory.length - 2]?.text.includes('Summarize') ? <Sparkles className="mr-2 h-4 w-4 animate-pulse" /> : <BookText className="mr-2 h-4 w-4" />}
                     Summarize Selected
                 </Button>
             </form>
-            <Button variant="outline" size="sm" onClick={onSelectDocumentsClick} disabled={isWebSearchEnabled}>
+            <Button variant="outline" size="sm" onClick={onSelectDocumentsClick}>
                 <FileText className="mr-2 h-4 w-4" />
                 {selectedDocIds.length > 0 ? 'Change Documents' : 'Select Documents'}
             </Button>

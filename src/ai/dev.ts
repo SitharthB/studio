@@ -10,6 +10,5 @@ import { config } from 'dotenv';
 config();
 
 import '@/ai/flows/answer-questions-about-documents.ts';
-import '@/ai/flows/answer-questions-using-documents-and-web.ts';
 import '@/ai/flows/generate-summary-of-documents.ts';
 import '@/ai/flows/search-web.ts';

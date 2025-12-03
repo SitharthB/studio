@@ -1,7 +1,6 @@
 'use server';
 
 import { answerQuestionsAboutDocuments } from '@/ai/flows/answer-questions-about-documents';
-import { answerQuestionsUsingDocumentsAndWeb } from '@/ai/flows/answer-questions-using-documents-and-web';
 import { generateSummaryOfDocuments } from '@/ai/flows/generate-summary-of-documents';
 import { searchWebFlow } from '@/ai/flows/search-web';
 import { z } from 'zod';
@@ -65,33 +64,54 @@ export async function askQuestion(
   }
 
   try {
-    let result;
     const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
 
     if (isWebSearchEnabled) {
-       result = await answerQuestionsUsingDocumentsAndWeb({
+      // 1. Perform web search
+      const webSearchResult = await searchWebFlow({ query: question });
+      
+      // 2. Augment document context with web results
+      const webContext = `Document Name: Web Search\n\n${webSearchResult.answer}`;
+      const allContext = [...documentContents, webContext];
+
+      // 3. Call the document QA flow with the combined context
+      const result = await answerQuestionsAboutDocuments({
         question,
-        documents: documentContents,
+        documents: allContext,
       });
-    } else {
-       result = await answerQuestionsAboutDocuments({
-        question,
-        documents: documentContents,
-      });
-    }
-    
-    const remappedCitations = result.citations?.map(citation => {
-        // The AI is asked to return the document name. We find the corresponding ID.
-        // If it's a web search, the ID can be 'web-search'
+
+       const remappedCitations = result.citations?.map(citation => {
         const doc = documents.find(d => d.name === citation.document);
+        let documentId = doc ? doc.id : 'web-search';
+        // The AI might cite "Web Search"
+        if (citation.document === 'Web Search') {
+            documentId = 'web-search';
+        }
         return {
-            documentId: doc ? doc.id : 'web-search',
+            documentId,
             passage: citation.passage,
             citationNumber: citation.citationNumber,
         };
-    }) || [];
+      }) || [];
+      return { answer: result.answer, citations: remappedCitations };
 
-    return { answer: result.answer, citations: remappedCitations };
+    } else {
+       // Just use the documents
+       const result = await answerQuestionsAboutDocuments({
+        question,
+        documents: documentContents,
+      });
+       const remappedCitations = result.citations?.map(citation => {
+        const doc = documents.find(d => d.name === citation.document);
+        return {
+            documentId: doc ? doc.id : 'unknown-doc',
+            passage: citation.passage,
+            citationNumber: citation.citationNumber,
+        };
+      }) || [];
+      return { answer: result.answer, citations: remappedCitations };
+    }
+    
   } catch (e: any) {
     console.error(e);
     return { error: e.message || 'Failed to get an answer from the AI. Please try again.' };
