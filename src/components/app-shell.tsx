@@ -1,0 +1,65 @@
+'use client';
+
+import React, { useState } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { DocumentSidebar } from '@/components/document-sidebar';
+import { ChatPanel } from '@/components/chat-panel';
+import { DocumentViewer } from '@/components/document-viewer';
+import { collections as initialCollections, documents as initialDocuments } from '@/lib/data';
+import type { Collection, Document, ChatMessage, Citation } from '@/types';
+
+export default function AppShell() {
+  const [collections, setCollections] = useState<Collection[]>(initialCollections);
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [viewingCitation, setViewingCitation] = useState<{ doc: Document, citation: Citation } | null>(null);
+
+  const handleDocSelect = (docId: string, isSelected: boolean) => {
+    setSelectedDocs((prev) => {
+      if (isSelected) {
+        return [...prev, docId];
+      } else {
+        return prev.filter((id) => id !== docId);
+      }
+    });
+  };
+
+  const handleCitationClick = (citation: Citation) => {
+    const doc = documents.find((d) => d.id === citation.documentId);
+    if (doc) {
+      setViewingCitation({ doc, citation });
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <DocumentSidebar
+        collections={collections}
+        documents={documents}
+        selectedDocs={selectedDocs}
+        onDocSelect={handleDocSelect}
+      />
+      <SidebarInset>
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <SidebarTrigger className="md:hidden" />
+        </header>
+        <main className="flex-1 h-[calc(100vh-3.5rem)] md:h-screen">
+            <ChatPanel
+            documents={documents}
+            selectedDocIds={selectedDocs}
+            chatHistory={chatHistory}
+            setChatHistory={setChatHistory}
+            onCitationClick={handleCitationClick}
+            />
+        </main>
+      </SidebarInset>
+      <DocumentViewer
+        open={!!viewingCitation}
+        onOpenChange={(open) => !open && setViewingCitation(null)}
+        document={viewingCitation?.doc ?? null}
+        citation={viewingCitation?.citation ?? null}
+      />
+    </SidebarProvider>
+  );
+}
