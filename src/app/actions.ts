@@ -24,10 +24,10 @@ const AskQuestionSchema = z.object({
 });
 
 const SummarizeDocumentsSchema = z.object({
-    documents: z.array(z.object({
-        name: z.string(),
-        content: z.string(),
-    })),
+  documents: z.array(z.object({
+    name: z.string(),
+    content: z.string(),
+  })),
 });
 
 type AskQuestionState = {
@@ -52,7 +52,7 @@ export async function askQuestion(
     question: formData.get('question'),
     isSmartSearch: isSmartSearch,
     allDocuments: JSON.parse(formData.get('allDocuments') as string || '[]'),
-    documents: isSmartSearch ? [] : JSON.parse(formData.get('documents') as string || '[]')
+    documents: isSmartSearch ? undefined : JSON.parse(formData.get('documents') as string || '[]')
   };
 
   const parsed = AskQuestionSchema.safeParse(dataToParse);
@@ -92,7 +92,7 @@ export async function askQuestion(
 
       const remappedCitations = result.citations?.map(citation => {
         // Find the document whose name matches the one in the citation.
-        const doc = selectedDocuments.find(d => d.name === citation.document);
+        const doc = selectedDocuments.find(d => d.name === citation.document.replace('Document Name: ', ''));
         return {
             documentId: doc ? doc.id : 'unknown-doc',
             passage: citation.passage,

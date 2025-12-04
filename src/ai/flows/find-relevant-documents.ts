@@ -20,13 +20,19 @@ export type FindRelevantDocumentsOutput = {
   relevantDocumentIds: string[];
 };
 
-const FindRelevantDocumentsInputSchema = z.object({
-  query: z.string().describe('The user\'s search query or topic of interest.'),
-  documents: z.array(z.object({
+const DocumentSchemaForAI = z.object({
     id: z.string(),
     name: z.string(),
     content: z.string(),
-  })).describe('The list of all available documents to search through.'),
+    collectionId: z.string().nullable(),
+    type: z.string(),
+    size: z.number(),
+    added: z.string(),
+});
+
+const FindRelevantDocumentsInputSchema = z.object({
+  query: z.string().describe('The user\'s search query or topic of interest.'),
+  documents: z.array(DocumentSchemaForAI).describe('The list of all available documents to search through.'),
 });
 
 const FindRelevantDocumentsOutputSchema = z.object({
