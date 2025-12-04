@@ -103,32 +103,32 @@ export async function summarizeDocuments(
     prevState: SummarizeState,
     formData: FormData
 ): Promise<SummarizeState> {
-    const parsed = SummarizeDocumentsSchema.safeParse({
-        documents: JSON.parse(formData.get('documents') as string),
-    });
+  const parsed = SummarizeDocumentsSchema.safeParse({
+    documents: JSON.parse(formData.get('documents') as string),
+  });
 
-    if (!parsed.success) {
-        return { error: 'Invalid input for summarization.' };
-    }
+  if (!parsed.success) {
+    return { error: 'Invalid input for summarization.' };
+  }
 
-    const { documents } = parsed.data;
+  const { documents } = parsed.data;
 
-    if (documents.length === 0) {
-        return { error: 'Please select at least one document to summarize.' };
-    }
+  if (documents.length === 0) {
+    return { error: 'Please select at least one document to summarize.' };
+  }
 
-    try {
-        const combinedContent = documents.map(d => {
-            return `--- Document: ${d.name} ---\n\n${d.content}`;
-        }).join('\n\n');
-        
-        const result = await generateSummaryOfDocuments({
-            documents: combinedContent,
-        });
+  try {
+      const combinedContent = documents.map(d => {
+          return `--- Document: ${d.name} ---\n\n${d.content}`;
+      }).join('\n\n');
+      
+      const result = await generateSummaryOfDocuments({
+          documents: combinedContent,
+      });
 
-        return { summary: result.summary };
-    } catch (e: any) {
-        console.error(e);
-        return { error: e.message || 'Failed to generate summary. Please try again.' };
-    }
+      return { summary: result.summary };
+  } catch (e: any) {
+      console.error(e);
+      return { error: e.message || 'Failed to generate summary. Please try again.' };
+  }
 }
