@@ -56,14 +56,14 @@ interface ManageCollectionsDialogProps {
   setCollections: React.Dispatch<React.SetStateAction<Collection[]>>;
 }
 
-function FileTypeIcon({ type, className }: { type: string, className?: string }) {
-    if (type.toLowerCase() === 'pdf') {
+function FileTypeIcon({ type, className }: { type?: string, className?: string }) {
+    if (type?.toLowerCase() === 'pdf') {
       return <FileText className={cn("h-4 w-4 text-red-500", className)} />;
     }
-    if (type.toLowerCase() === 'txt') {
+    if (type?.toLowerCase() === 'txt') {
       return <FileText className={cn("h-4 w-4 text-gray-500", className)} />;
     }
-     if (type.toLowerCase() === 'xlsx') {
+     if (type?.toLowerCase() === 'xlsx') {
       return <FileText className={cn("h-4 w-4 text-green-500", className)} />;
     }
     return <FileText className={cn("h-4 w-4 text-gray-400", className)} />;
@@ -93,6 +93,7 @@ export function ManageCollectionsDialog({
   );
 
   const filteredCollections = useMemo(() => {
+    if (!collectionSearchQuery) return collections;
     return collections.filter(col => 
         col.name.toLowerCase().includes(collectionSearchQuery.toLowerCase())
     );
@@ -289,45 +290,47 @@ export function ManageCollectionsDialog({
                 </div>
                 <Separator className="mb-2" />
                 <ScrollArea className="flex-1 -mx-3">
-                    <div className="p-2 space-y-1">
-                        <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Collections</h3>
-                        {filteredCollections.map(col => (
-                        <div key={col.id} className="flex items-center group">
-                            <Button 
-                                variant={activeContext === col.id ? 'secondary' : 'ghost'} 
-                                size="sm" 
-                                className="w-full justify-start gap-2 flex-1" 
-                                onClick={() => setActiveContext(col.id)}
-                            >
-                                <Folder className="h-4 w-4 text-primary"/>
-                                <span className="truncate">{col.name}</span>
-                                <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => { setCollectionToRename(col); setNewCollectionName(col.name); }}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Rename
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setCollectionToDelete(col)} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                    <div className="px-2 pb-2">
+                        <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Collections</h3>
+                        <div className="space-y-1 mt-1">
+                          {filteredCollections.map(col => (
+                          <div key={col.id} className="flex items-center group">
+                              <Button 
+                                  variant={activeContext === col.id ? 'secondary' : 'ghost'} 
+                                  size="sm" 
+                                  className="w-full justify-start gap-2 flex-1 h-8" 
+                                  onClick={() => setActiveContext(col.id)}
+                              >
+                                  <Folder className="h-4 w-4 text-primary"/>
+                                  <span className="truncate">{col.name}</span>
+                                  <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
+                              </Button>
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { setCollectionToRename(col); setNewCollectionName(col.name); }}>
+                                          <Edit className="mr-2 h-4 w-4" />
+                                          Rename
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => setCollectionToDelete(col)} className="text-destructive focus:text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                      </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                          </div>
+                          ))}
+                           {collections.length > 0 && filteredCollections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No matching collections.</p>}
                         </div>
-                        ))}
-                         {collections.length > 0 && filteredCollections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No matching collections.</p>}
                     </div>
                      <Separator className="my-2" />
-                    <div className="p-2">
-                         <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-1">Documents</h3>
-                        <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext('standalone')}>
+                    <div className="px-2">
+                         <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-1">Documents</h3>
+                        <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2 h-8" onClick={() => setActiveContext('standalone')}>
                             <FileText className="h-4 w-4"/>
                             <span>Standalone Documents</span>
                             <span className="ml-auto text-xs text-muted-foreground">{standaloneDocuments.length}</span>

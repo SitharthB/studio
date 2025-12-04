@@ -15,11 +15,11 @@ interface ChatMessageProps {
   onDocumentResultClick: (document: Document) => void;
 }
 
-function FileTypeIcon({ type }: { type: string }) {
-  if (type.toLowerCase() === 'pdf') {
+function FileTypeIcon({ type }: { type?: string }) {
+  if (type?.toLowerCase() === 'pdf') {
     return <FileText className="h-5 w-5 text-red-500" />;
   }
-  if (type.toLowerCase() === 'txt') {
+  if (type?.toLowerCase() === 'txt') {
     return <FileText className="h-5 w-5 text-gray-500" />;
   }
   return <FileText className="h-5 w-5 text-gray-400" />;
