@@ -85,6 +85,7 @@ export function ManageCollectionsDialog({
   const [newCollectionInputValue, setNewCollectionInputValue] = useState('');
   const [activeContext, setActiveContext] = useState<string>('standalone'); // collection id or 'standalone'
   const [collectionSearchQuery, setCollectionSearchQuery] = useState('');
+  const [documentSearchQuery, setDocumentSearchQuery] = useState('');
 
   const standaloneDocuments = useMemo(
     () => documents.filter((doc) => !doc.collectionId),
@@ -98,11 +99,19 @@ export function ManageCollectionsDialog({
   }, [collections, collectionSearchQuery]);
 
   const displayedDocuments = useMemo(() => {
+    let docs;
     if (activeContext === 'standalone') {
-        return standaloneDocuments;
+        docs = standaloneDocuments;
+    } else {
+        docs = documents.filter(doc => doc.collectionId === activeContext);
     }
-    return documents.filter(doc => doc.collectionId === activeContext);
-  }, [documents, activeContext, standaloneDocuments]);
+
+    if (documentSearchQuery) {
+        return docs.filter(doc => doc.name.toLowerCase().includes(documentSearchQuery.toLowerCase()));
+    }
+    
+    return docs;
+  }, [documents, activeContext, standaloneDocuments, documentSearchQuery]);
 
   const activeCollection = useMemo(() => {
     return collections.find(c => c.id === activeContext);
@@ -295,7 +304,6 @@ export function ManageCollectionsDialog({
                             <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
                         </Button>
                         ))}
-                         {collections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No collections yet.</p>}
                          {collections.length > 0 && filteredCollections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No matching collections.</p>}
                     </div>
                      <Separator className="my-2" />
@@ -319,19 +327,32 @@ export function ManageCollectionsDialog({
                             <Folder className="h-5 w-5 text-primary" />
                             <h3 className="font-semibold text-base truncate" title={activeCollection.name}>{activeCollection.name}</h3>
                         </div>
-                        <div>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5" />
+                            <h3 className="font-semibold text-base">Standalone Documents</h3>
+                        </div>
+                    )}
+                     <div className="relative flex-1 max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search documents..."
+                            className="h-9 pl-9"
+                            value={documentSearchQuery}
+                            onChange={(e) => setDocumentSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+                 <div className='p-4 border-b flex items-center justify-end gap-4'>
+                    {activeCollection && (
+                         <div>
                             <Button variant="outline" size="sm" onClick={() => { setCollectionToRename(activeCollection); setNewCollectionName(activeCollection.name); }}>
                                 <Edit className="mr-2 h-4 w-4" /> Rename
                             </Button>
                             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive ml-2" onClick={() => setCollectionToDelete(activeCollection)}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                             </Button>
-                        </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5" />
-                            <h3 className="font-semibold text-base">Standalone Documents</h3>
                         </div>
                     )}
                 </div>
@@ -351,7 +372,11 @@ export function ManageCollectionsDialog({
                         </Table>
                     ) : (
                         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                            <p>{activeCollection ? 'This collection is empty.' : 'No standalone documents.'}</p>
+                             {documentSearchQuery ? (
+                                <p>No documents match your search.</p>
+                            ) : (
+                                <p>{activeCollection ? 'This collection is empty.' : 'No standalone documents.'}</p>
+                            )}
                         </div>
                     )}
                 </ScrollArea>
