@@ -18,7 +18,7 @@ const DocumentSchema = z.object({
 
 const AskQuestionSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty.'),
-  documents: z.array(DocumentSchema).optional(), // Make documents optional
+  documents: z.array(DocumentSchema).optional(),
   isSmartSearch: z.boolean(),
   allDocuments: z.array(DocumentSchema),
 });
@@ -45,21 +45,12 @@ export async function askQuestion(
 ): Promise<AskQuestionState> {
   const isSmartSearch = formData.get('isSmartSearch') === 'true';
 
-  let dataToParse;
-  if (isSmartSearch) {
-    dataToParse = {
-      question: formData.get('question'),
-      isSmartSearch: true,
-      allDocuments: JSON.parse(formData.get('allDocuments') as string),
-    };
-  } else {
-    dataToParse = {
-      question: formData.get('question'),
-      isSmartSearch: false,
-      allDocuments: JSON.parse(formData.get('allDocuments') as string),
-      documents: JSON.parse(formData.get('documents') as string),
-    };
-  }
+  const dataToParse = {
+    question: formData.get('question'),
+    isSmartSearch: isSmartSearch,
+    allDocuments: JSON.parse(formData.get('allDocuments') as string || '[]'),
+    documents: isSmartSearch ? [] : JSON.parse(formData.get('documents') as string || '[]')
+  };
 
   const parsed = AskQuestionSchema.safeParse(dataToParse);
 
