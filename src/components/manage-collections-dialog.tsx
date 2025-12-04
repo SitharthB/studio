@@ -292,17 +292,35 @@ export function ManageCollectionsDialog({
                     <div className="p-2 space-y-1">
                         <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Collections</h3>
                         {filteredCollections.map(col => (
-                        <Button 
-                            key={col.id} 
-                            variant={activeContext === col.id ? 'secondary' : 'ghost'} 
-                            size="sm" 
-                            className="w-full justify-start gap-2" 
-                            onClick={() => setActiveContext(col.id)}
-                        >
-                            <Folder className="h-4 w-4 text-primary"/>
-                            <span className="truncate">{col.name}</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
-                        </Button>
+                        <div key={col.id} className="flex items-center group">
+                            <Button 
+                                variant={activeContext === col.id ? 'secondary' : 'ghost'} 
+                                size="sm" 
+                                className="w-full justify-start gap-2 flex-1" 
+                                onClick={() => setActiveContext(col.id)}
+                            >
+                                <Folder className="h-4 w-4 text-primary"/>
+                                <span className="truncate">{col.name}</span>
+                                <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => { setCollectionToRename(col); setNewCollectionName(col.name); }}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Rename
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setCollectionToDelete(col)} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                         ))}
                          {collections.length > 0 && filteredCollections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No matching collections.</p>}
                     </div>
@@ -322,12 +340,10 @@ export function ManageCollectionsDialog({
             <div className="flex flex-col min-h-0">
                 <div className="p-4 border-b flex items-center justify-between gap-4">
                     {activeCollection ? (
-                        <>
                         <div className="flex items-center gap-3">
                             <Folder className="h-5 w-5 text-primary" />
                             <h3 className="font-semibold text-base truncate" title={activeCollection.name}>{activeCollection.name}</h3>
                         </div>
-                        </>
                     ) : (
                         <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5" />
@@ -343,18 +359,6 @@ export function ManageCollectionsDialog({
                             onChange={(e) => setDocumentSearchQuery(e.target.value)}
                         />
                     </div>
-                </div>
-                 <div className='p-4 border-b flex items-center justify-end gap-4'>
-                    {activeCollection && (
-                         <div>
-                            <Button variant="outline" size="sm" onClick={() => { setCollectionToRename(activeCollection); setNewCollectionName(activeCollection.name); }}>
-                                <Edit className="mr-2 h-4 w-4" /> Rename
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive ml-2" onClick={() => setCollectionToDelete(activeCollection)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </Button>
-                        </div>
-                    )}
                 </div>
                 <ScrollArea className="flex-1">
                     {displayedDocuments.length > 0 ? (
