@@ -45,16 +45,23 @@ export async function askQuestion(
 ): Promise<AskQuestionState> {
   const isSmartSearch = formData.get('isSmartSearch') === 'true';
 
-  const dataToParse = {
-    question: formData.get('question'),
-    isSmartSearch: isSmartSearch,
-    allDocuments: JSON.parse(formData.get('allDocuments') as string),
-    // Conditionally parse documents only when not in smart search mode
-    documents: !isSmartSearch ? JSON.parse(formData.get('documents') as string) : [],
-  };
+  let dataToParse;
+  if (isSmartSearch) {
+    dataToParse = {
+      question: formData.get('question'),
+      isSmartSearch: true,
+      allDocuments: JSON.parse(formData.get('allDocuments') as string),
+    };
+  } else {
+    dataToParse = {
+      question: formData.get('question'),
+      isSmartSearch: false,
+      allDocuments: JSON.parse(formData.get('allDocuments') as string),
+      documents: JSON.parse(formData.get('documents') as string),
+    };
+  }
 
   const parsed = AskQuestionSchema.safeParse(dataToParse);
-
 
   if (!parsed.success) {
     console.error(parsed.error);
