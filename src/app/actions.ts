@@ -20,7 +20,7 @@ const AskQuestionSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty.'),
   documents: z.array(DocumentSchema).optional(),
   isSmartSearch: z.boolean(),
-  allDocuments: z.array(DocumentSchema),
+  allDocuments: z.string().transform((str) => JSON.parse(str) as Document[]),
 });
 
 const SummarizeDocumentsSchema = z.object({
@@ -46,13 +46,14 @@ export async function askQuestion(
   prevState: AskQuestionState,
   formData: FormData
 ): Promise<AskQuestionState> {
+  
   const isSmartSearch = formData.get('isSmartSearch') === 'true';
 
   const dataToParse = {
     question: formData.get('question'),
     isSmartSearch: isSmartSearch,
-    allDocuments: JSON.parse(formData.get('allDocuments') as string || '[]'),
-    documents: isSmartSearch ? undefined : JSON.parse(formData.get('documents') as string || '[]')
+    allDocuments: formData.get('allDocuments') as string,
+    documents: isSmartSearch ? [] : JSON.parse(formData.get('documents') as string || '[]'),
   };
 
   const parsed = AskQuestionSchema.safeParse(dataToParse);
