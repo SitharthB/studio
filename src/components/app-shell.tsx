@@ -8,6 +8,7 @@ import { documents as initialDocuments, collections as initialCollections } from
 import type { Document, ChatMessage, Citation, Collection } from '@/types';
 import { SelectDocumentsDialog } from './select-documents-dialog';
 import { UploadDocumentDialog } from './upload-document-dialog';
+import { ManageCollectionsDialog } from './manage-collections-dialog';
 import { cn } from '@/lib/utils';
 
 export default function AppShell() {
@@ -22,6 +23,7 @@ export default function AppShell() {
 
   const [isDocSelectOpen, setIsDocSelectOpen] = useState(false);
   const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
+  const [isManageCollectionsOpen, setIsManageCollectionsOpen] = useState(false);
   const [isSmartSearch, setIsSmartSearch] = useState(false);
 
   const handleCitationClick = (citation: Citation) => {
@@ -105,6 +107,7 @@ export default function AppShell() {
     <div className="flex h-screen w-full bg-background">
       <DocumentSidebar
         onUploadClick={() => setIsUploadDocOpen(true)}
+        onManageCollectionsClick={() => setIsManageCollectionsOpen(true)}
         isSmartSearch={isSmartSearch}
         onSmartSearchChange={setIsSmartSearch}
       />
@@ -121,6 +124,7 @@ export default function AppShell() {
             onCitationClick={handleCitationClick}
             onDocumentResultClick={handleDocumentResultClick}
             onSelectDocumentsClick={() => setIsDocSelectOpen(true)}
+
             onNewQuestion={handleNewQuestion}
             isSmartSearch={isSmartSearch}
           />
@@ -145,6 +149,14 @@ export default function AppShell() {
         onOpenChange={setIsUploadDocOpen}
         collections={collections}
         onUpload={handleUpload}
+      />
+      <ManageCollectionsDialog
+        open={isManageCollectionsOpen}
+        onOpenChange={setIsManageCollectionsOpen}
+        documents={documents}
+        setDocuments={setDocuments}
+        collections={collections}
+        setCollections={setCollections}
       />
     </div>
   );

@@ -22,6 +22,7 @@ import { Switch } from './ui/switch';
 
 interface DocumentSidebarProps {
   onUploadClick: () => void;
+  onManageCollectionsClick: () => void;
   className?: string;
   isSmartSearch: boolean;
   onSmartSearchChange: (value: boolean) => void;
@@ -29,6 +30,7 @@ interface DocumentSidebarProps {
 
 export function DocumentSidebar({
   onUploadClick,
+  onManageCollectionsClick,
   className,
   isSmartSearch,
   onSmartSearchChange,
@@ -44,7 +46,7 @@ export function DocumentSidebar({
                 <Plus className="mr-2" />
                 Upload Document
             </Button>
-            <Button variant="outline" className="w-full bg-sidebar-accent border-sidebar-border hover:bg-sidebar-accent/80">
+            <Button onClick={onManageCollectionsClick} variant="outline" className="w-full bg-sidebar-accent border-sidebar-border hover:bg-sidebar-accent/80">
                 <FolderKanban className="mr-2" />
                 Manage Collections
             </Button>
