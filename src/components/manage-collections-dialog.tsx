@@ -42,7 +42,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collection, Document } from '@/types';
-import { MoreHorizontal, Folder, FileText, Trash2, Edit, FolderPlus, Plus, FolderSymlink } from 'lucide-react';
+import { MoreHorizontal, Folder, FileText, Trash2, Edit, FolderPlus, Plus, FolderSymlink, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
@@ -84,11 +84,18 @@ export function ManageCollectionsDialog({
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [newCollectionInputValue, setNewCollectionInputValue] = useState('');
   const [activeContext, setActiveContext] = useState<string>('standalone'); // collection id or 'standalone'
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState('');
 
   const standaloneDocuments = useMemo(
     () => documents.filter((doc) => !doc.collectionId),
     [documents]
   );
+
+  const filteredCollections = useMemo(() => {
+    return collections.filter(col => 
+        col.name.toLowerCase().includes(collectionSearchQuery.toLowerCase())
+    );
+  }, [collections, collectionSearchQuery]);
 
   const displayedDocuments = useMemo(() => {
     if (activeContext === 'standalone') {
@@ -262,11 +269,20 @@ export function ManageCollectionsDialog({
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Search collections..."
+                      className="h-9 pl-9"
+                      value={collectionSearchQuery}
+                      onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                  />
+                </div>
                 <Separator className="mb-2" />
                 <ScrollArea className="flex-1 -mx-3">
                     <div className="p-2 space-y-1">
                         <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Collections</h3>
-                        {collections.map(col => (
+                        {filteredCollections.map(col => (
                         <Button 
                             key={col.id} 
                             variant={activeContext === col.id ? 'secondary' : 'ghost'} 
@@ -280,6 +296,7 @@ export function ManageCollectionsDialog({
                         </Button>
                         ))}
                          {collections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No collections yet.</p>}
+                         {collections.length > 0 && filteredCollections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No matching collections.</p>}
                     </div>
                      <Separator className="my-2" />
                     <div className="p-2">
