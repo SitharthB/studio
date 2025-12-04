@@ -11,7 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 export type GenerateSummaryOfDocumentsInput = {
-  documents: string;
+  documents: {name: string, content: string}[];
 };
 
 export type GenerateSummaryOfDocumentsOutput = {
@@ -19,7 +19,10 @@ export type GenerateSummaryOfDocumentsOutput = {
 };
 
 const GenerateSummaryOfDocumentsInputSchema = z.object({
-  documents: z.string().describe('A single string containing the content of all documents to be summarized, separated by headers.'),
+  documents: z.array(z.object({
+    name: z.string(),
+    content: z.string(),
+  })).describe('An array of document objects to be summarized.'),
 });
 
 const GenerateSummaryOfDocumentsOutputSchema = z.object({
@@ -35,10 +38,13 @@ const prompt = ai.definePrompt({
   name: 'generateSummaryOfDocumentsPrompt',
   input: {schema: GenerateSummaryOfDocumentsInputSchema },
   output: {schema: GenerateSummaryOfDocumentsOutputSchema},
-  prompt: `Provide a concise and structured overall summary that synthesizes the key information from the following text, which contains one or more documents.
+  prompt: `Provide a concise and structured overall summary that synthesizes the key information from the following documents.
 
-  Here is the text:
-  {{{documents}}}
+  Here are the documents:
+  {{#each documents}}
+  --- Document: {{{this.name}}} ---
+  {{{this.content}}}
+  {{/each}}
   `,
 });
 

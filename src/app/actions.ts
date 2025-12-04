@@ -24,7 +24,10 @@ const AskQuestionSchema = z.object({
 });
 
 const SummarizeDocumentsSchema = z.object({
-    documents: z.array(DocumentSchema),
+    documents: z.array(z.object({
+        name: z.string(),
+        content: z.string(),
+    })),
 });
 
 type AskQuestionState = {
@@ -60,6 +63,8 @@ export async function askQuestion(
   }
 
   const { question, documents, allDocuments } = parsed.data;
+  const selectedDocuments = documents || [];
+
 
   try {
     if (isSmartSearch) {
@@ -75,10 +80,10 @@ export async function askQuestion(
       return { relevantDocuments: sortedDocs };
 
     } else {
-      if (!documents || documents.length === 0) {
+      if (selectedDocuments.length === 0) {
         return { error: 'Please select at least one document.' };
       }
-      const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
+      const documentContents = selectedDocuments.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
 
       const result = await answerQuestionsAboutDocuments({
         question,
@@ -87,7 +92,7 @@ export async function askQuestion(
 
       const remappedCitations = result.citations?.map(citation => {
         // Find the document whose name matches the one in the citation.
-        const doc = documents.find(d => d.name === citation.document);
+        const doc = selectedDocuments.find(d => d.name === citation.document);
         return {
             documentId: doc ? doc.id : 'unknown-doc',
             passage: citation.passage,
@@ -109,10 +114,11 @@ export async function summarizeDocuments(
     formData: FormData
 ): Promise<SummarizeState> {
   const parsed = SummarizeDocumentsSchema.safeParse({
-    documents: JSON.parse(formData.get('documents') as string),
+    documents: JSON.parse(formData.get('documents') as string || '[]'),
   });
 
   if (!parsed.success) {
+    console.error(parsed.error);
     return { error: 'Invalid input for summarization.' };
   }
 
@@ -123,12 +129,8 @@ export async function summarizeDocuments(
   }
 
   try {
-      const combinedContent = documents.map(d => {
-          return `--- Document: ${d.name} ---\n\n${d.content}`;
-      }).join('\n\n');
-      
       const result = await generateSummaryOfDocuments({
-          documents: combinedContent,
+          documents: documents,
       });
 
       return { summary: result.summary };
