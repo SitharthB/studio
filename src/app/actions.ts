@@ -18,7 +18,7 @@ const DocumentSchema = z.object({
 
 const AskQuestionSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty.'),
-  documents: z.array(DocumentSchema),
+  documents: z.array(DocumentSchema).optional(), // Make documents optional
   isSmartSearch: z.boolean(),
   allDocuments: z.array(DocumentSchema),
 });
@@ -71,7 +71,7 @@ export async function askQuestion(
       return { relevantDocuments: sortedDocs };
 
     } else {
-      if (documents.length === 0) {
+      if (!documents || documents.length === 0) {
         return { error: 'Please select at least one document.' };
       }
       const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
@@ -82,6 +82,7 @@ export async function askQuestion(
       });
 
       const remappedCitations = result.citations?.map(citation => {
+        // Find the document whose name matches the one in the citation.
         const doc = documents.find(d => d.name === citation.document);
         return {
             documentId: doc ? doc.id : 'unknown-doc',
