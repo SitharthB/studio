@@ -9,11 +9,10 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { Document } from '@/types';
 
 export type FindRelevantDocumentsInput = {
   query: string;
-  documents: Document[];
+  documents: {id: string, name: string, content: string}[];
 };
 
 export type FindRelevantDocumentsOutput = {
@@ -24,10 +23,6 @@ const DocumentSchemaForAI = z.object({
     id: z.string(),
     name: z.string(),
     content: z.string(),
-    collectionId: z.string().nullable(),
-    type: z.string(),
-    size: z.number(),
-    added: z.string(),
 });
 
 const FindRelevantDocumentsInputSchema = z.object({
