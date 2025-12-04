@@ -6,13 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, FileText, HelpCircle, Folder, BookText, Globe } from 'lucide-react';
+import { Send, Sparkles, FileText, HelpCircle, Folder, BookText } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
 import { askQuestion, summarizeDocuments } from '@/app/actions';
 import type { ChatMessage as ChatMessageType, Document, Citation, Collection } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Label } from './ui/label';
-import { Switch } from './ui/switch';
 import { cn } from '@/lib/utils';
 
 interface ChatPanelProps {
@@ -61,8 +59,6 @@ export function ChatPanel({
   const [questionState, questionFormAction] = useFormState(askQuestion, initialQuestionState);
   const [summaryState, summaryFormAction] = useFormState(summarizeDocuments, initialSummaryState);
   
-  const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
-  
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const summaryFormRef = useRef<HTMLFormElement>(null);
@@ -73,29 +69,23 @@ export function ChatPanel({
   const isAIThinking = chatHistory.some(msg => msg.isLoading);
 
   const contextDisplay = useMemo(() => {
-    if (isWebSearchEnabled && selectedDocIds.length === 0) {
-      return { icon: Globe, text: 'Searching the web' };
+    if (selectedDocIds.length === 0) {
+      return { icon: FileText, text: 'No documents selected' };
     }
     
-    const parts: {name: string, isCollection: boolean, isWeb?: boolean}[] = [];
+    const parts: {name: string, isCollection: boolean}[] = [];
     
-    if (selectedDocIds.length > 0) {
-        const selectedCollections = collections.filter(col => 
-          col.documentIds.length > 0 && col.documentIds.every(id => selectedDocIds.includes(id))
-        );
-        const selectedCollectionDocIds = new Set(selectedCollections.flatMap(c => c.documentIds));
-        const standaloneDocs = selectedDocuments.filter(doc => !selectedCollectionDocIds.has(doc.id));
+    const selectedCollections = collections.filter(col => 
+      col.documentIds.length > 0 && col.documentIds.every(id => selectedDocIds.includes(id))
+    );
+    const selectedCollectionDocIds = new Set(selectedCollections.flatMap(c => c.documentIds));
+    const standaloneDocs = selectedDocuments.filter(doc => !selectedCollectionDocIds.has(doc.id));
 
-        if (selectedCollections.length > 0) {
-          parts.push(...selectedCollections.map(c => ({name: c.name, isCollection: true})));
-        }
-        if (standaloneDocs.length > 0) {
-          parts.push(...standaloneDocs.map(d => ({name: d.name, isCollection: false})));
-        }
+    if (selectedCollections.length > 0) {
+      parts.push(...selectedCollections.map(c => ({name: c.name, isCollection: true})));
     }
-
-    if (isWebSearchEnabled) {
-        parts.push({name: 'Web Search', isCollection: false, isWeb: true});
+    if (standaloneDocs.length > 0) {
+      parts.push(...standaloneDocs.map(d => ({name: d.name, isCollection: false})));
     }
 
     if (parts.length === 0) {
@@ -104,7 +94,7 @@ export function ChatPanel({
 
     return { parts };
 
-  }, [selectedDocIds, documents, collections, isWebSearchEnabled]);
+  }, [selectedDocIds, documents, collections]);
 
   useEffect(() => {
     const state = questionState;
@@ -227,7 +217,7 @@ export function ChatPanel({
               {contextDisplay.parts.map((part, index) => (
                 <React.Fragment key={index}>
                   <div className="flex items-center gap-1.5 bg-secondary px-2 py-1 rounded-md">
-                    {part.isWeb ? <Globe className="h-4 w-4 text-primary" /> : part.isCollection ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4" />}
+                    {part.isCollection ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4" />}
                     <span className="font-semibold text-foreground truncate" title={part.name}>
                       {part.name}
                     </span>
@@ -238,7 +228,7 @@ export function ChatPanel({
           ) : (
              contextDisplay.icon && (
                 <>
-                <contextDisplay.icon className={cn("h-4 w-4 shrink-0", isWebSearchEnabled && "text-primary")} />
+                <contextDisplay.icon className="h-4 w-4 shrink-0" />
                 <span className="font-semibold text-foreground truncate" title={contextDisplay.text}>
                     {contextDisplay.text}
                 </span>
@@ -289,19 +279,16 @@ export function ChatPanel({
                 name="documents"
                 value={JSON.stringify(selectedDocuments.map(d => ({id: d.id, name: d.name, content: d.content})))}
               />
-              <input type="hidden" name="isWebSearchEnabled" value={String(isWebSearchEnabled)} />
               <Textarea
                 name="question"
                 placeholder={
-                  isWebSearchEnabled 
-                    ? 'Ask about documents and the web...' 
-                    : selectedDocuments.length > 0
+                  selectedDocuments.length > 0
                       ? 'Ask a question about selected documents...'
                       : 'Select a document to start chatting'
                 }
                 className="flex-1 resize-none border-none shadow-none focus-visible:ring-0"
                 rows={1}
-                disabled={(selectedDocuments.length === 0 && !isWebSearchEnabled) || isAIThinking}
+                disabled={selectedDocuments.length === 0 || isAIThinking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -309,19 +296,11 @@ export function ChatPanel({
                   }
                 }}
               />
-              <SubmitButton icon={<Send className="h-5 w-5" />} disabled={isAIThinking || (selectedDocuments.length === 0 && !isWebSearchEnabled)} />
+              <SubmitButton icon={<Send className="h-5 w-5" />} disabled={isAIThinking || selectedDocuments.length === 0} />
             </form>
           </CardContent>
           <CardFooter className="px-2 py-1 justify-end">
-            <div className="flex items-center space-x-2">
-                <Switch 
-                    id="web-search-toggle" 
-                    checked={isWebSearchEnabled}
-                    onCheckedChange={setIsWebSearchEnabled}
-                    disabled={isAIThinking}
-                />
-                <Label htmlFor="web-search-toggle" className="text-xs text-muted-foreground">Web Search</Label>
-            </div>
+            {/* Web Search Toggle Removed */}
           </CardFooter>
         </Card>
       </div>
@@ -337,7 +316,7 @@ function WelcomeScreen({ selectedCount }: { selectedCount: number }) {
         </div>
       <h1 className="mt-6 font-headline text-3xl font-semibold">Ready to answer your questions</h1>
       <p className="mt-2 text-muted-foreground max-w-sm">
-        Ask a question about the documents you've selected, or toggle on web search to ask the internet.
+        Ask a question about the documents you've selected.
       </p>
       <div className="mt-8">
         {selectedCount === 0 && (
@@ -350,3 +329,5 @@ function WelcomeScreen({ selectedCount }: { selectedCount: number }) {
     </div>
   );
 }
+
+    
