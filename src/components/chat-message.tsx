@@ -66,7 +66,7 @@ export function ChatMessage({ message, onCitationClick, onDocumentResultClick }:
     if (!documents || documents.length === 0) {
       return (
         <div className="prose prose-sm dark:prose-invert max-w-none">
-          I couldn't find any documents related to your query. Please try asking something else.
+          Sorry, no document matches your query.
         </div>
       )
     }
