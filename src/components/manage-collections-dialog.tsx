@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -42,14 +42,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collection, Document } from '@/types';
-import { MoreHorizontal, Folder, FileText, Trash2, Edit, FolderPlus, Plus, ChevronDown, FolderSymlink } from 'lucide-react';
+import { MoreHorizontal, Folder, FileText, Trash2, Edit, FolderPlus, Plus, FolderSymlink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { cn } from '@/lib/utils';
+import { Separator } from './ui/separator';
 
 interface ManageCollectionsDialogProps {
   open: boolean;
@@ -60,18 +56,18 @@ interface ManageCollectionsDialogProps {
   setCollections: React.Dispatch<React.SetStateAction<Collection[]>>;
 }
 
-function FileTypeIcon({ type }: { type: string }) {
+function FileTypeIcon({ type, className }: { type: string, className?: string }) {
     if (type.toLowerCase() === 'pdf') {
-      return <FileText className="h-4 w-4 text-red-500" />;
+      return <FileText className={cn("h-4 w-4 text-red-500", className)} />;
     }
     if (type.toLowerCase() === 'txt') {
-      return <FileText className="h-4 w-4 text-gray-500" />;
+      return <FileText className={cn("h-4 w-4 text-gray-500", className)} />;
     }
      if (type.toLowerCase() === 'xlsx') {
-      return <FileText className="h-4 w-4 text-green-500" />;
+      return <FileText className={cn("h-4 w-4 text-green-500", className)} />;
     }
-    return <FileText className="h-4 w-4 text-gray-400" />;
-  }
+    return <FileText className={cn("h-4 w-4 text-gray-400", className)} />;
+}
 
 export function ManageCollectionsDialog({
   open,
@@ -87,12 +83,23 @@ export function ManageCollectionsDialog({
   const [newCollectionName, setNewCollectionName] = useState('');
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [newCollectionInputValue, setNewCollectionInputValue] = useState('');
-
+  const [activeContext, setActiveContext] = useState<string>('standalone'); // collection id or 'standalone'
 
   const standaloneDocuments = useMemo(
     () => documents.filter((doc) => !doc.collectionId),
     [documents]
   );
+
+  const displayedDocuments = useMemo(() => {
+    if (activeContext === 'standalone') {
+        return standaloneDocuments;
+    }
+    return documents.filter(doc => doc.collectionId === activeContext);
+  }, [documents, activeContext, standaloneDocuments]);
+
+  const activeCollection = useMemo(() => {
+    return collections.find(c => c.id === activeContext);
+  }, [collections, activeContext]);
   
   const handleCreateCollection = () => {
     if (newCollectionInputValue.trim()) {
@@ -103,6 +110,7 @@ export function ManageCollectionsDialog({
         };
         setCollections(prev => [...prev, newCollection]);
         setNewCollectionInputValue('');
+        setActiveContext(newCollection.id);
         toast({ title: "Collection created", description: `"${newCollection.name}" has been created.` });
     }
   };
@@ -111,15 +119,17 @@ export function ManageCollectionsDialog({
     const doc = documents.find(d => d.id === docId);
     if (!doc) return;
 
+    const originalCollectionId = doc.collectionId;
+    
     // Update document's collectionId
     setDocuments(prevDocs => 
         prevDocs.map(d => d.id === docId ? { ...d, collectionId: targetCollectionId } : d)
     );
     
     // Remove from old collection
-    if (doc.collectionId) {
+    if (originalCollectionId) {
         setCollections(prevCols => prevCols.map(col => 
-            col.id === doc.collectionId ? { ...col, documentIds: col.documentIds.filter(id => id !== docId) } : col
+            col.id === originalCollectionId ? { ...col, documentIds: col.documentIds.filter(id => id !== docId) } : col
         ));
     }
 
@@ -129,7 +139,8 @@ export function ManageCollectionsDialog({
             col.id === targetCollectionId ? { ...col, documentIds: [...col.documentIds, docId] } : col
         ));
     }
-    toast({ title: "Document moved", description: `"${doc.name}" has been moved.` });
+    const targetCollection = collections.find(c => c.id === targetCollectionId);
+    toast({ title: "Document moved", description: `"${doc.name}" moved to ${targetCollection ? `"${targetCollection.name}"` : 'Standalone'}.` });
   };
 
   const handleDeleteDocument = () => {
@@ -169,20 +180,22 @@ export function ManageCollectionsDialog({
 
     // Remove the collection
     setCollections(prev => prev.filter(col => col.id !== collectionToDelete.id));
+    setActiveContext('standalone');
 
     toast({ title: "Collection deleted", description: `"${collectionToDelete.name}" was deleted. Its documents are now standalone.` });
     setCollectionToDelete(null);
   };
-  
-  const getDocumentsForCollection = (collectionId: string) => {
-    return documents.filter(doc => doc.collectionId === collectionId);
-  }
 
   const renderDocumentRow = (doc: Document) => (
     <TableRow key={doc.id}>
-        <TableCell className="flex items-center gap-2">
-            <FileTypeIcon type={doc.type} />
-            <span className="font-medium truncate" title={doc.name}>{doc.name}</span>
+        <TableCell>
+            <div className="flex items-center gap-3">
+              <FileTypeIcon type={doc.type} />
+              <span className="font-medium truncate" title={doc.name}>{doc.name}</span>
+            </div>
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground">
+            {(doc.size / 1024).toFixed(1)} KB
         </TableCell>
         <TableCell className="text-right">
             <DropdownMenu>
@@ -226,82 +239,109 @@ export function ManageCollectionsDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4">
-          <DialogTitle className="text-xl">Manage Collections</DialogTitle>
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle className="text-lg">Manage Documents & Collections</DialogTitle>
           <DialogDescription>
             Organize your documents into collections, or manage standalone files.
           </DialogDescription>
         </DialogHeader>
 
-        <div className='flex-1 flex flex-col min-h-0 px-6'>
-            <div className="flex items-center gap-2 mb-4">
-                <Input 
-                    placeholder="Create a new collection..."
-                    value={newCollectionInputValue}
-                    onChange={(e) => setNewCollectionInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreateCollection()}
-                />
-                <Button onClick={handleCreateCollection} disabled={!newCollectionInputValue.trim()}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create
-                </Button>
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] flex-1 min-h-0">
+            {/* Left Panel */}
+            <div className="flex flex-col border-r bg-background/50 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                    <Input 
+                        placeholder="New collection..."
+                        className="h-9"
+                        value={newCollectionInputValue}
+                        onChange={(e) => setNewCollectionInputValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCreateCollection()}
+                    />
+                    <Button onClick={handleCreateCollection} disabled={!newCollectionInputValue.trim()} size="icon" className="h-9 w-9 shrink-0">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+                <Separator className="mb-2" />
+                <ScrollArea className="flex-1 -mx-3">
+                    <div className="p-2 space-y-1">
+                        <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Collections</h3>
+                        {collections.map(col => (
+                        <Button 
+                            key={col.id} 
+                            variant={activeContext === col.id ? 'secondary' : 'ghost'} 
+                            size="sm" 
+                            className="w-full justify-start gap-2" 
+                            onClick={() => setActiveContext(col.id)}
+                        >
+                            <Folder className="h-4 w-4 text-primary"/>
+                            <span className="truncate">{col.name}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{col.documentIds.length}</span>
+                        </Button>
+                        ))}
+                         {collections.length === 0 && <p className="px-3 text-xs text-muted-foreground">No collections yet.</p>}
+                    </div>
+                     <Separator className="my-2" />
+                    <div className="p-2">
+                         <h3 className="px-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-1">Documents</h3>
+                        <Button variant={activeContext === 'standalone' ? 'secondary' : 'ghost'} size="sm" className="w-full justify-start gap-2" onClick={() => setActiveContext('standalone')}>
+                            <FileText className="h-4 w-4"/>
+                            <span>Standalone Documents</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{standaloneDocuments.length}</span>
+                        </Button>
+                    </div>
+                </ScrollArea>
             </div>
             
-            <ScrollArea className="flex-1 -mx-6">
-                <Accordion type="multiple" defaultValue={['item-standalone', ...(collections.map(c => `item-${c.id}`))]} className="px-6">
-                    {/* Collections */}
-                    {collections.map(collection => (
-                        <AccordionItem value={`item-${collection.id}`} key={collection.id}>
-                            <AccordionTrigger>
-                                <div className="flex items-center gap-3">
-                                    <Folder className="h-5 w-5 text-primary" />
-                                    <span className="font-semibold text-base">{collection.name}</span>
-                                    <span className="text-sm text-muted-foreground">({collection.documentIds.length})</span>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <Table>
-                                    <TableBody>
-                                        {getDocumentsForCollection(collection.id).map(doc => renderDocumentRow(doc))}
-                                    </TableBody>
-                                </Table>
-                                {collection.documentIds.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">This collection is empty.</p>}
-                                <div className="p-2 border-t mt-2">
-                                <Button variant="ghost" size="sm" onClick={() => { setCollectionToRename(collection); setNewCollectionName(collection.name); }}>
-                                    <Edit className="mr-2 h-4 w-4" /> Rename
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setCollectionToDelete(collection)}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Collection
-                                </Button>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-
-                    {/* Standalone Documents */}
-                    <AccordionItem value="item-standalone">
-                        <AccordionTrigger>
-                            <div className="flex items-center gap-3">
-                                <FileText className="h-5 w-5" />
-                                <span className="font-semibold text-base">Standalone Documents</span>
-                                <span className="text-sm text-muted-foreground">({standaloneDocuments.length})</span>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                           <Table>
-                                <TableBody>
-                                {standaloneDocuments.map(doc => renderDocumentRow(doc))}
-                                </TableBody>
-                            </Table>
-                            {standaloneDocuments.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No standalone documents.</p>}
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-            </ScrollArea>
+            {/* Right Panel */}
+            <div className="flex flex-col min-h-0">
+                <div className="p-4 border-b flex items-center justify-between gap-4">
+                    {activeCollection ? (
+                        <>
+                        <div className="flex items-center gap-3">
+                            <Folder className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold text-base truncate" title={activeCollection.name}>{activeCollection.name}</h3>
+                        </div>
+                        <div>
+                            <Button variant="outline" size="sm" onClick={() => { setCollectionToRename(activeCollection); setNewCollectionName(activeCollection.name); }}>
+                                <Edit className="mr-2 h-4 w-4" /> Rename
+                            </Button>
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive ml-2" onClick={() => setCollectionToDelete(activeCollection)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </Button>
+                        </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5" />
+                            <h3 className="font-semibold text-base">Standalone Documents</h3>
+                        </div>
+                    )}
+                </div>
+                <ScrollArea className="flex-1">
+                    {displayedDocuments.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead className="w-[100px] text-right">Size</TableHead>
+                                    <TableHead className="w-[80px] text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {displayedDocuments.map(doc => renderDocumentRow(doc))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                            <p>{activeCollection ? 'This collection is empty.' : 'No standalone documents.'}</p>
+                        </div>
+                    )}
+                </ScrollArea>
+            </div>
         </div>
         
-        <DialogFooter className="p-4 border-t mt-auto">
+        <DialogFooter className="p-4 border-t">
           <Button onClick={() => onOpenChange(false)}>Done</Button>
         </DialogFooter>
       </DialogContent>
