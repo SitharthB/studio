@@ -2,18 +2,25 @@
 
 import { answerQuestionsAboutDocuments } from '@/ai/flows/answer-questions-about-documents';
 import { generateSummaryOfDocuments } from '@/ai/flows/generate-summary-of-documents';
+import { findRelevantDocuments } from '@/ai/flows/find-relevant-documents';
 import { z } from 'zod';
-import type { Citation } from '@/types';
+import type { Citation, Document } from '@/types';
 
 const DocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
   content: z.string(),
+  collectionId: z.string().nullable(),
+  type: z.string(),
+  size: z.number(),
+  added: z.string(),
 });
 
 const AskQuestionSchema = z.object({
   question: z.string().min(1, 'Question cannot be empty.'),
   documents: z.array(DocumentSchema),
+  isSmartSearch: z.boolean(),
+  allDocuments: z.array(DocumentSchema),
 });
 
 const SummarizeDocumentsSchema = z.object({
@@ -23,6 +30,7 @@ const SummarizeDocumentsSchema = z.object({
 type AskQuestionState = {
   answer?: string;
   citations?: Citation[];
+  relevantDocuments?: Document[];
   error?: string;
 };
 
@@ -38,36 +46,52 @@ export async function askQuestion(
   const parsed = AskQuestionSchema.safeParse({
     question: formData.get('question'),
     documents: JSON.parse(formData.get('documents') as string),
+    isSmartSearch: formData.get('isSmartSearch') === 'true',
+    allDocuments: JSON.parse(formData.get('allDocuments') as string),
   });
 
   if (!parsed.success) {
+    console.error(parsed.error);
     return { error: 'Invalid input.' };
   }
 
-  const { question, documents } = parsed.data;
-
-  if (documents.length === 0) {
-    return { error: 'Please select at least one document.' };
-  }
+  const { question, documents, isSmartSearch, allDocuments } = parsed.data;
 
   try {
-    const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
+    if (isSmartSearch) {
+      const result = await findRelevantDocuments({
+        query: question,
+        documents: allDocuments,
+      });
+      const relevantDocs = allDocuments.filter(doc => result.relevantDocumentIds.includes(doc.id));
+      
+      // Sort relevantDocs based on the order from the AI result
+      const sortedDocs = result.relevantDocumentIds.map(id => relevantDocs.find(d => d.id === id)).filter((d): d is Document => !!d);
 
-    const result = await answerQuestionsAboutDocuments({
-      question,
-      documents: documentContents,
-    });
+      return { relevantDocuments: sortedDocs };
 
-    const remappedCitations = result.citations?.map(citation => {
-      const doc = documents.find(d => d.name === citation.document);
-      return {
-          documentId: doc ? doc.id : 'unknown-doc',
-          passage: citation.passage,
-          citationNumber: citation.citationNumber,
-      };
-    }) || [];
+    } else {
+      if (documents.length === 0) {
+        return { error: 'Please select at least one document.' };
+      }
+      const documentContents = documents.map((d) => `Document Name: ${d.name}\n\n${d.content}`);
 
-    return { answer: result.answer, citations: remappedCitations };
+      const result = await answerQuestionsAboutDocuments({
+        question,
+        documents: documentContents,
+      });
+
+      const remappedCitations = result.citations?.map(citation => {
+        const doc = documents.find(d => d.name === citation.document);
+        return {
+            documentId: doc ? doc.id : 'unknown-doc',
+            passage: citation.passage,
+            citationNumber: citation.citationNumber,
+        };
+      }) || [];
+
+      return { answer: result.answer, citations: remappedCitations };
+    }
     
   } catch (e: any) {
     console.error(e);
@@ -108,5 +132,3 @@ export async function summarizeDocuments(
         return { error: e.message || 'Failed to generate summary. Please try again.' };
     }
 }
-
-    

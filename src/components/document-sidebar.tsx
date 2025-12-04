@@ -6,17 +6,9 @@ import {
   History,
   FolderKanban,
   MessageSquarePlus,
+  Search,
 } from 'lucide-react';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 
@@ -25,15 +17,21 @@ import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 
 interface DocumentSidebarProps {
   onUploadClick: () => void;
   className?: string;
+  isSmartSearch: boolean;
+  onSmartSearchChange: (value: boolean) => void;
 }
 
 export function DocumentSidebar({
   onUploadClick,
   className,
+  isSmartSearch,
+  onSmartSearchChange,
 }: DocumentSidebarProps) {
 
   return (
@@ -50,6 +48,17 @@ export function DocumentSidebar({
                 <FolderKanban className="mr-2" />
                 Manage Collections
             </Button>
+            <div className='flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent p-3 mt-2'>
+              <Label htmlFor="smart-search-toggle" className="flex items-center gap-2 cursor-pointer">
+                <Search className="h-4 w-4" />
+                <span className="font-medium">Document Search</span>
+              </Label>
+              <Switch
+                id="smart-search-toggle"
+                checked={isSmartSearch}
+                onCheckedChange={onSmartSearchChange}
+              />
+            </div>
         </div>
         <div className="my-2">
             <SidebarSeparator />
@@ -61,10 +70,10 @@ export function DocumentSidebar({
             </Button>
         </div>
         <div className="flex-1 px-2 space-y-2 overflow-y-auto">
-             <SidebarGroupLabel className="flex items-center px-2">
-                <History className="mr-2" />
+             <div className="flex items-center px-2 text-xs font-semibold text-sidebar-foreground/70">
+                <History className="mr-2 h-4 w-4" />
                 Chat History
-            </SidebarGroupLabel>
+            </div>
             <div className="space-y-1">
                 <Button variant="ghost" size="sm" className="w-full justify-start truncate bg-sidebar-accent text-sidebar-accent-foreground">
                     Q3 Revenue Analysis

@@ -1,18 +1,31 @@
 'use client';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { ChatMessage as ChatMessageType, Citation } from '@/types';
-import { Bot, Quote, User, Sparkles } from 'lucide-react';
+import type { ChatMessage as ChatMessageType, Citation, Document } from '@/types';
+import { Bot, Quote, User, Sparkles, FileText, Search } from 'lucide-react';
 import React from 'react';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   onCitationClick: (citation: Citation) => void;
+  onDocumentResultClick: (document: Document) => void;
 }
 
-export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
+function FileTypeIcon({ type }: { type: string }) {
+  if (type.toLowerCase() === 'pdf') {
+    return <FileText className="h-5 w-5 text-red-500" />;
+  }
+  if (type.toLowerCase() === 'txt') {
+    return <FileText className="h-5 w-5 text-gray-500" />;
+  }
+  return <FileText className="h-5 w-5 text-gray-400" />;
+}
+
+export function ChatMessage({ message, onCitationClick, onDocumentResultClick }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
 
   const renderContentWithCitations = (text: string, citations?: Citation[]) => {
@@ -49,6 +62,38 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
     });
   };
 
+  const renderRelevantDocuments = (documents?: Document[]) => {
+    if (!documents || documents.length === 0) {
+      return (
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          I couldn't find any documents related to your query. Please try asking something else.
+        </div>
+      )
+    }
+
+    return (
+      <div className='space-y-3'>
+        <p className="font-medium text-sm">I found {documents.length} relevant document{documents.length > 1 ? 's' : ''} for you. Click to preview.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {documents.map(doc => (
+             <Button
+              key={doc.id}
+              variant="outline"
+              className="h-auto w-full justify-start items-center p-3 gap-3"
+              onClick={() => onDocumentResultClick(doc)}
+            >
+              <FileTypeIcon type={doc.type} />
+              <div className="text-left">
+                <p className="font-medium text-sm truncate">{doc.name}</p>
+                <p className="text-xs text-muted-foreground">{(doc.size / 1024).toFixed(1)} KB</p>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
 
   return (
     <div className={cn('flex items-start gap-4', isAssistant ? '' : 'justify-end')}>
@@ -66,20 +111,24 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
             <span className="text-sm">Thinking...</span>
           </div>
         ) : (
-          <div
-            className={cn(
-              'prose prose-sm dark:prose-invert max-w-none',
-               isAssistant ? '' : 'text-primary-foreground'
+          <>
+            {message.relevantDocuments ? renderRelevantDocuments(message.relevantDocuments) : (
+              <div
+                className={cn(
+                  'prose prose-sm dark:prose-invert max-w-none',
+                  isAssistant ? '' : 'text-primary-foreground'
+                )}
+              >
+                {renderContentWithCitations(message.text, message.citations)}
+              </div>
             )}
-          >
-            {renderContentWithCitations(message.text, message.citations)}
-          </div>
+          </>
         )}
       </div>
        {!isAssistant && (
         <Avatar className="h-9 w-9 border">
             <AvatarFallback className='bg-secondary'>
-                <User />
+                {message.isSmartSearch ? <Search /> : <User />}
             </AvatarFallback>
         </Avatar>
       )}

@@ -10,15 +10,22 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+export type GenerateSummaryOfDocumentsInput = {
+  documents: string;
+};
+
+export type GenerateSummaryOfDocumentsOutput = {
+  summary: string;
+};
+
 const GenerateSummaryOfDocumentsInputSchema = z.object({
   documents: z.string().describe('A single string containing the content of all documents to be summarized, separated by headers.'),
 });
-export type GenerateSummaryOfDocumentsInput = z.infer<typeof GenerateSummaryOfDocumentsInputSchema>;
 
 const GenerateSummaryOfDocumentsOutputSchema = z.object({
   summary: z.string().describe('The combined summary of all the documents.'),
 });
-export type GenerateSummaryOfDocumentsOutput = z.infer<typeof GenerateSummaryOfDocumentsOutputSchema>;
+
 
 export async function generateSummaryOfDocuments(input: GenerateSummaryOfDocumentsInput): Promise<GenerateSummaryOfDocumentsOutput> {
   return generateSummaryOfDocumentsFlow(input);

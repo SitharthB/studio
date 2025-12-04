@@ -25,5 +25,7 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   text: string;
   citations?: Citation[];
+  relevantDocuments?: Document[];
   isLoading?: boolean;
+  isSmartSearch?: boolean;
 };

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Document as DocumentType, Citation } from '@/types';
 import { X, FileText } from 'lucide-react';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
 
 interface DocumentViewerProps {
   open: boolean;
@@ -18,12 +20,15 @@ const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, cita
   return (
     <div ref={ref} className="bg-card p-4 rounded-lg border">
       <div className="flex items-center gap-2 mb-3">
-        <div className="flex-none rounded-full h-6 w-6 flex items-center justify-center bg-secondary text-secondary-foreground text-xs font-bold">
-          {citation.citationNumber}
-        </div>
+        <Badge
+            variant="secondary"
+            className="h-6 w-6 p-0 justify-center"
+          >
+            {citation.citationNumber}
+          </Badge>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm truncate" title={doc.name}>
-            {doc.name}
+            Source: {doc.name}
           </p>
         </div>
       </div>
@@ -35,21 +40,59 @@ const EvidenceBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType, cita
 });
 EvidenceBlock.displayName = 'EvidenceBlock';
 
+const FullDocumentBlock = React.forwardRef<HTMLDivElement, { doc: DocumentType }>(({ doc }, ref) => {
+  return (
+    <div ref={ref} className="bg-card p-4 rounded-lg border">
+       <div className="flex items-center gap-2 mb-3">
+        <FileText className="h-4 w-4" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate" title={doc.name}>
+            {doc.name}
+          </p>
+        </div>
+      </div>
+      <Separator className="my-2" />
+      <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+        {doc.content}
+      </div>
+    </div>
+  )
+});
+FullDocumentBlock.displayName = 'FullDocumentBlock';
+
 
 export function DocumentViewer({ open, onOpenChange, documents, citations }: DocumentViewerProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
+    if (open && documents.length > 0) {
+      // Find the last added document that is not already associated with a citation
+      const lastDoc = documents[documents.length-1];
+      const isCited = citations.some(c => c.documentId === lastDoc.id);
+
+      if(!isCited) {
+        const docKey = `doc-${lastDoc.id}`;
+        const ref = blockRefs.current[docKey];
+        setTimeout(() => {
+          if (ref) {
+              ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      }
+    }
+  }, [documents, citations, open]);
+
+  useEffect(() => {
     // When a new citation is added, scroll to it.
     if (open && citations.length > 0) {
       const latestCitation = citations[citations.length - 1];
-      const citationKey = `${latestCitation.documentId}-${latestCitation.citationNumber}`;
+      const citationKey = `citation-${latestCitation.documentId}-${latestCitation.citationNumber}`;
       const ref = blockRefs.current[citationKey];
       
       setTimeout(() => {
         if (ref) {
-            ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 100); // Small delay to allow for render
     }
@@ -58,6 +101,11 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
   const handleClose = () => {
     onOpenChange(false);
   }
+  
+  const hasContent = documents.length > 0 || citations.length > 0;
+  
+  const citationDocIds = new Set(citations.map(c => c.documentId));
+  const fullDocsToRender = documents.filter(d => !citationDocIds.has(d.id));
 
   return (
     <AnimatePresence>
@@ -79,17 +127,18 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
           </div>
           <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="p-4 space-y-4">
-              {citations.length === 0 ? (
+              {!hasContent ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
                   <FileText className="h-12 w-12 mb-4"/>
                   <p className="font-medium">No Evidence Selected</p>
-                  <p className="text-sm">Click a citation number in the answer to view the source document and passage here.</p>
+                  <p className="text-sm">Click a citation number or a document from Smart Search to view the source here.</p>
                 </div>
               ) : (
-                citations.map((citation) => {
+                <>
+                {citations.map((citation) => {
                   const doc = documents.find(d => d.id === citation.documentId);
                   if (!doc) return null;
-                  const citationKey = `${citation.documentId}-${citation.citationNumber}`;
+                  const citationKey = `citation-${citation.documentId}-${citation.citationNumber}`;
                   return (
                     <EvidenceBlock 
                       key={citationKey}
@@ -98,7 +147,19 @@ export function DocumentViewer({ open, onOpenChange, documents, citations }: Doc
                       ref={el => blockRefs.current[citationKey] = el}
                     />
                   );
-                })
+                })}
+                {fullDocsToRender.length > 0 && citations.length > 0 && <Separator />}
+                {fullDocsToRender.map(doc => {
+                  const docKey = `doc-${doc.id}`;
+                  return (
+                    <FullDocumentBlock 
+                      key={docKey} 
+                      doc={doc} 
+                      ref={el => blockRefs.current[docKey] = el}
+                    />
+                  )
+                })}
+                </>
               )}
             </div>
           </ScrollArea>
